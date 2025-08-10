@@ -72,8 +72,8 @@ def main():
         st.header("Analysis Mode")
         mode = st.radio(
             "Choose analysis mode:",
-            ["Single APK Analysis", "Dual APK Comparison"],
-            help="Single mode analyzes one APK, Comparison mode compares two APKs"
+            ["Single APK Analysis", "Batch APK Analysis", "Dual APK Comparison"],
+            help="Single mode analyzes one APK, Batch mode analyzes multiple APKs, Comparison mode compares two APKs"
         )
         
         st.markdown("---")
@@ -81,6 +81,8 @@ def main():
     
     if mode == "Single APK Analysis":
         single_apk_analysis()
+    elif mode == "Batch APK Analysis":
+        batch_apk_analysis()
     else:
         dual_apk_comparison()
 
@@ -114,6 +116,140 @@ def single_apk_analysis():
             except Exception as e:
                 st.error(f"Error analyzing APK: {str(e)}")
                 st.exception(e)
+
+def batch_apk_analysis():
+    st.header("Batch APK Analysis")
+    st.markdown("Upload multiple APK files to analyze them in batch and get a comprehensive overview")
+    
+    uploaded_files = st.file_uploader(
+        "Upload APK files",
+        type=['apk'],
+        accept_multiple_files=True,
+        help="Select multiple Android APK files for batch analysis"
+    )
+    
+    if uploaded_files:
+        st.info(f"📁 {len(uploaded_files)} APK files uploaded")
+        
+        # Analysis options
+        col1, col2 = st.columns(2)
+        with col1:
+            show_details = st.checkbox("Show detailed analysis for each APK", value=False)
+        with col2:
+            export_csv = st.checkbox("Enable CSV export", value=True)
+        
+        if st.button("🚀 Analyze All APKs", type="primary"):
+            analyze_batch_apks(uploaded_files, show_details, export_csv)
+
+def analyze_batch_apks(uploaded_files, show_details, export_csv):
+    """Analyze multiple APK files in batch"""
+    results = []
+    
+    # Progress tracking
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, uploaded_file in enumerate(uploaded_files):
+        status_text.text(f"Analyzing {uploaded_file.name}...")
+        progress_bar.progress((i + 1) / len(uploaded_files))
+        
+        try:
+            # Save uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.apk') as tmp_file:
+                tmp_file.write(uploaded_file.getvalue())
+                tmp_file_path = tmp_file.name
+            
+            # Analyze APK
+            analyzer = APKAnalyzer(tmp_file_path)
+            analysis_data = analyzer.analyze()
+            
+            # Add filename to analysis data
+            analysis_data['filename'] = uploaded_file.name
+            analysis_data['file_size_mb'] = uploaded_file.size / (1024 * 1024)
+            
+            results.append(analysis_data)
+            
+            # Cleanup
+            os.unlink(tmp_file_path)
+            
+        except Exception as e:
+            st.error(f"Error analyzing {uploaded_file.name}: {str(e)}")
+            results.append({
+                'filename': uploaded_file.name,
+                'error': str(e)
+            })
+    
+    status_text.text("Analysis complete!")
+    progress_bar.progress(1.0)
+    
+    # Display results
+    display_batch_results(results, show_details, export_csv)
+
+def display_batch_results(results, show_details, export_csv):
+    """Display batch analysis results"""
+    st.success(f"✅ Analyzed {len(results)} APK files")
+    
+    # Summary statistics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    successful_analyses = [r for r in results if 'error' not in r]
+    with col1:
+        st.metric("Successful Analyses", len(successful_analyses))
+    
+    with col2:
+        if successful_analyses:
+            total_size = sum(r.get('file_size', 0) for r in successful_analyses)
+            st.metric("Total Size", f"{format_size(total_size)}")
+        else:
+            st.metric("Total Size", "0 MB")
+    
+    with col3:
+        total_concerns = sum(len(check_security_concerns(r)) for r in successful_analyses)
+        st.metric("Total Concerns", total_concerns)
+    
+    with col4:
+        unique_packages = len(set(r.get('package_name', '') for r in successful_analyses if r.get('package_name')))
+        st.metric("Unique Packages", unique_packages)
+    
+    # Summary table
+    st.subheader("📊 Analysis Summary")
+    if successful_analyses:
+        summary_data = []
+        for result in successful_analyses:
+            concerns = check_security_concerns(result)
+            summary_data.append({
+                'Filename': result.get('filename', 'Unknown'),
+                'App Name': safe_get(result, 'app_name', 'Unknown'),
+                'Package': safe_get(result, 'package_name', 'Unknown'),
+                'Version': safe_get(result, 'version_name', 'Unknown'),
+                'Size': format_size(safe_get(result, 'file_size', 0)),
+                'Concerns': len(concerns),
+                'Architecture': safe_get(result, 'architectures', 'Unknown'),
+                'Min SDK': safe_get(result, 'min_sdk_version', 'Unknown'),
+                'Target SDK': safe_get(result, 'target_sdk_version', 'Unknown')
+            })
+        
+        df = pd.DataFrame(summary_data)
+        st.dataframe(df, use_container_width=True)
+        
+        # CSV export
+        if export_csv:
+            csv = df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Summary as CSV",
+                data=csv,
+                file_name="apk_batch_analysis.csv",
+                mime="text/csv"
+            )
+    
+    # Detailed analysis for each APK
+    if show_details and successful_analyses:
+        st.markdown("---")
+        st.subheader("📱 Detailed Analysis")
+        
+        for i, result in enumerate(successful_analyses):
+            with st.expander(f"{result.get('filename', 'Unknown')} - Detailed Analysis", expanded=False):
+                display_apk_analysis(result, result.get('filename', 'Unknown'))
 
 def dual_apk_comparison():
     st.header("Dual APK Comparison")
@@ -179,7 +315,7 @@ def display_apk_analysis(data, filename):
     # Security Concerns Check
     security_concerns = check_security_concerns(data)
     if security_concerns:
-        st.error("🚨 **Security Concerns Detected**")
+        st.error("🚨 **Concerns Detected**")
         for concern in security_concerns:
             st.warning(concern)
         st.markdown("---")
@@ -478,7 +614,7 @@ def display_apk_detailed_summary(data):
     # Security concerns check for comparison mode
     security_concerns = check_security_concerns(data)
     if security_concerns:
-        st.error("🚨 **Security Issues**")
+        st.error("🚨 **Concerns Detected**")
         for concern in security_concerns:
             st.warning(concern)
         st.markdown("---")

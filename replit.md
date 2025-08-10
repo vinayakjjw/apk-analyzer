@@ -1,6 +1,6 @@
 # Overview
 
-APK Analysis Tool is a Streamlit-based web application for analyzing Android APK files. The tool provides comprehensive metadata extraction, security analysis, and comparison capabilities for Android applications. Users can upload APK files to examine their structure, permissions, features, signatures, and other technical details. The application supports both single APK analysis and side-by-side comparison of two APKs.
+APK Analysis Tool is a Streamlit-based web application for analyzing Android APK files. The tool provides comprehensive metadata extraction, security analysis, and comparison capabilities for Android applications. Users can upload APK files to examine their structure, permissions, features, signatures, and other technical details. The application supports single APK analysis, batch analysis of multiple APKs, and side-by-side comparison of two APKs with intelligent security concern detection.
 
 # User Preferences
 
@@ -10,8 +10,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Frontend Architecture
 - **Streamlit Web Framework**: The application uses Streamlit for the web interface, providing an interactive dashboard with file upload capabilities, data visualization, and comparison views
-- **Responsive Layout**: Wide layout configuration with expandable sidebar for mode selection and feature documentation
-- **Component-Based UI**: Modular interface with separate views for single analysis and dual comparison modes
+- **Responsive Layout**: Wide layout configuration with expandable sidebar for mode selection
+- **Component-Based UI**: Modular interface with separate views for single analysis, batch analysis, and dual comparison modes
+- **Security Highlighting**: Real-time security concern detection with prominent warning display
+- **Batch Processing**: Progress tracking and summary statistics for multiple APK analysis
 
 ## Backend Architecture
 - **Modular Analysis System**: Core functionality separated into specialized analyzer classes:
