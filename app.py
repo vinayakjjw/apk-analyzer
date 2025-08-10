@@ -239,7 +239,8 @@ def display_batch_results(results, show_details, export_csv):
                 label="📥 Download Summary as CSV",
                 data=csv,
                 file_name="apk_batch_analysis.csv",
-                mime="text/csv"
+                mime="text/csv",
+                key="batch_csv_download"
             )
     
     # Detailed analysis for each APK
@@ -249,7 +250,127 @@ def display_batch_results(results, show_details, export_csv):
         
         for i, result in enumerate(successful_analyses):
             with st.expander(f"{result.get('filename', 'Unknown')} - Detailed Analysis", expanded=False):
-                display_apk_analysis(result, result.get('filename', 'Unknown'))
+                # Create a unique context for each detailed analysis to avoid ID conflicts
+                st.markdown(f"### {result.get('filename', 'Unknown')}")
+                display_apk_analysis_batch(result, result.get('filename', 'Unknown'), i)
+
+def display_apk_analysis_batch(data, filename, index):
+    """Display APK analysis for batch mode with unique keys"""
+    # Security Concerns Check
+    security_concerns = check_security_concerns(data)
+    if security_concerns:
+        st.error("🚨 **Concerns Detected**")
+        for concern in security_concerns:
+            st.warning(concern)
+        st.markdown("---")
+    
+    # App Overview with Icon
+    with st.expander("📱 App Overview", expanded=True):
+        # Display app icon if available
+        app_icon = safe_get(data, 'app_icon', None)
+        if app_icon:
+            try:
+                from io import BytesIO
+                col_icon, col_info = st.columns([1, 4])
+                with col_icon:
+                    # Convert to bytes if needed, then to BytesIO for Streamlit
+                    if isinstance(app_icon, str):
+                        # Convert string to bytes using latin-1 encoding
+                        icon_bytes = app_icon.encode('latin-1')
+                        icon_stream = BytesIO(icon_bytes)
+                        st.image(icon_stream, width=100, caption="App Icon")
+                    elif isinstance(app_icon, bytes):
+                        icon_stream = BytesIO(app_icon)
+                        st.image(icon_stream, width=100, caption="App Icon")
+                    else:
+                        st.image(app_icon, width=100, caption="App Icon")
+                with col_info:
+                    st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+                    st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+                    st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+                    st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+            except Exception as e:
+                # If icon display fails, show debug info and continue without icon
+                st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+                st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+                st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+                st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+                st.info(f"📱 Icon available but couldn't display: {type(app_icon)} - {len(app_icon) if hasattr(app_icon, '__len__') else 'N/A'} bytes")
+        else:
+            st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+            st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+            st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+            st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+            st.info("📱 No app icon found")
+        
+        st.write(f"**Min OS:** API {safe_get(data, 'min_sdk_version', 'Unknown')}")
+        st.write(f"**Target OS:** API {safe_get(data, 'target_sdk_version', 'Unknown')}")
+        st.write(f"**Size:** {format_size(safe_get(data, 'file_size', 0))}")
+        st.write(f"**Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
+        st.write(f"**Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
+        
+        # OpenGL Version in overview
+        features = safe_get(data, 'features', {})
+        opengl_version = features.get('opengl_version')
+        if opengl_version:
+            st.write(f"**Graphics:** {opengl_version}")
+    
+    # Permissions
+    with st.expander("🔒 Permissions", expanded=False):
+        permissions = safe_get(data, 'permissions', {})
+        
+        st.subheader("Declared Permissions")
+        declared = permissions.get('declared', [])
+        if declared:
+            for perm in declared:
+                st.write(f"• {perm}")
+        else:
+            st.info("No declared permissions found")
+    
+    # Android Manifest
+    with st.expander("📄 Android Manifest XML", expanded=False):
+        manifest_xml = safe_get(data, 'manifest_xml', None)
+        if manifest_xml:
+            # Create tabs for different viewing options
+            tab1, tab2 = st.tabs(["📋 Formatted View", "💻 Raw XML"])
+            
+            with tab1:
+                # Pretty formatted version with better readability
+                try:
+                    import xml.dom.minidom
+                    # Parse and pretty print the XML
+                    dom = xml.dom.minidom.parseString(manifest_xml)
+                    pretty_xml = dom.toprettyxml(indent="  ")
+                    # Remove empty lines
+                    pretty_lines = [line for line in pretty_xml.split('\n') if line.strip()]
+                    pretty_xml = '\n'.join(pretty_lines)
+                    
+                    st.code(pretty_xml, language='xml', line_numbers=True)
+                except:
+                    # Fallback to original if pretty printing fails
+                    st.code(manifest_xml, language='xml', line_numbers=True)
+            
+            with tab2:
+                # Raw XML in a scrollable text area
+                st.text_area(
+                    "Raw AndroidManifest.xml", 
+                    value=manifest_xml, 
+                    height=500, 
+                    label_visibility="collapsed",
+                    help="Raw XML content with vertical scrolling",
+                    key=f"manifest_raw_{index}"
+                )
+                
+            # Add download button with unique key
+            st.download_button(
+                label="📥 Download AndroidManifest.xml",
+                data=manifest_xml,
+                file_name=f"{safe_get(data, 'package_name', 'unknown')}_AndroidManifest.xml",
+                mime="application/xml",
+                key=f"manifest_download_batch_{index}"
+            )
+        else:
+            st.warning("Android Manifest XML not available")
 
 def dual_apk_comparison():
     st.header("Dual APK Comparison")
@@ -548,7 +669,8 @@ def display_apk_analysis(data, filename):
                 label="📥 Download AndroidManifest.xml",
                 data=manifest_xml,
                 file_name="AndroidManifest.xml",
-                mime="application/xml"
+                mime="application/xml",
+                key=f"manifest_download_{safe_get(data, 'package_name', 'unknown').replace('.', '_')}"
             )
         else:
             st.warning("Android Manifest XML not available")
