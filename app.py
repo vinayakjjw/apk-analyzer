@@ -131,277 +131,206 @@ def dual_apk_comparison():
                 st.exception(e)
 
 def display_apk_analysis(data, filename):
-    # Modern header with clean design
-    st.markdown("### 📱 APK Analysis Results")
-    st.markdown(f"**{filename}**")
-    st.divider()
+    st.success(f"✅ Successfully analyzed: {filename}")
     
-    # Main app card - Apple-inspired design
-    with st.container():
-        st.markdown("""
-        <style>
-        .app-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 2rem;
-            border-radius: 16px;
-            color: white;
-            margin-bottom: 2rem;
-        }
-        .app-title {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        .app-subtitle {
-            opacity: 0.9;
-            margin-bottom: 1rem;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .info-item {
-            background: rgba(255,255,255,0.1);
-            padding: 1rem;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # App overview card
-        col_icon, col_info = st.columns([1, 4])
-        
-        with col_icon:
-            # Display app icon if available
-            app_icon = safe_get(data, 'app_icon', None)
-            if app_icon:
-                try:
-                    # Try to display icon with validation
+    # App Overview with Icon
+    with st.expander("📱 App Overview", expanded=True):
+        # Display app icon if available
+        app_icon = safe_get(data, 'app_icon', None)
+        if app_icon:
+            try:
+                from io import BytesIO
+                col_icon, col_info = st.columns([1, 4])
+                with col_icon:
+                    # Convert to bytes if needed, then to BytesIO for Streamlit
                     if isinstance(app_icon, str):
+                        # Convert string to bytes using latin-1 encoding
                         icon_bytes = app_icon.encode('latin-1')
-                    elif isinstance(app_icon, bytes):
-                        icon_bytes = app_icon
-                    else:
-                        icon_bytes = app_icon
-                    
-                    # Validate if it's actually image data
-                    if len(icon_bytes) > 10:  # Basic size check
-                        from io import BytesIO
                         icon_stream = BytesIO(icon_bytes)
-                        st.image(icon_stream, width=100)
+                        st.image(icon_stream, width=100, caption="App Icon")
+                    elif isinstance(app_icon, bytes):
+                        icon_stream = BytesIO(app_icon)
+                        st.image(icon_stream, width=100, caption="App Icon")
                     else:
-                        st.markdown("📱")
-                        st.caption("Icon too small")
-                except:
-                    st.markdown("📱")
-                    st.caption("Icon found")
-            else:
-                st.markdown("📱")
-                st.caption("No icon")
+                        st.image(app_icon, width=100, caption="App Icon")
+                with col_info:
+                    st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+                    st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+                    st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+                    st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+            except Exception as e:
+                # If icon display fails, show debug info and continue without icon
+                st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+                st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+                st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+                st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+                st.info(f"📱 Icon available but couldn't display: {type(app_icon)} - {len(app_icon) if hasattr(app_icon, '__len__') else 'N/A'} bytes")
+        else:
+            st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+            st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+            st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+            st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+            st.info("📱 No app icon found")
         
-        with col_info:
-            # App header information
-            st.markdown(f"## {safe_get(data, 'app_name', 'Unknown')}")
-            st.markdown(f"**{safe_get(data, 'package_name', 'Unknown')}**")
-            st.markdown(f"Version {safe_get(data, 'version_name', 'Unknown')} (Build {safe_get(data, 'version_code', 'Unknown')})")
+        st.write(f"**Min OS:** API {safe_get(data, 'min_sdk_version', 'Unknown')}")
+        st.write(f"**Target OS:** API {safe_get(data, 'target_sdk_version', 'Unknown')}")
+        st.write(f"**Size:** {format_size(safe_get(data, 'file_size', 0))}")
+        st.write(f"**Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
+        st.write(f"**Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
         
-        st.divider()
-        
-        # Technical specifications in cards
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Min Android", f"API {safe_get(data, 'min_sdk_version', 'Unknown')}")
-            
-        with col2:
-            st.metric("Target Android", f"API {safe_get(data, 'target_sdk_version', 'Unknown')}")
-            
-        with col3:
-            st.metric("File Size", format_size(safe_get(data, 'file_size', 0)))
-            
-        with col4:
-            st.metric("Architecture", safe_get(data, 'architectures', 'Unknown'))
-        
-        # Additional info
-        col5, col6 = st.columns(2)
-        with col5:
-            debug_status = "Development" if safe_get(data, 'debuggable', False) else "Production"
-            st.metric("Build Type", debug_status)
-            
-        with col6:
-            features = safe_get(data, 'features', {})
-            opengl_version = features.get('opengl_version', 'Standard')
-            st.metric("Graphics", opengl_version)
+        # OpenGL Version in overview
+        features = safe_get(data, 'features', {})
+        opengl_version = features.get('opengl_version')
+        if opengl_version:
+            st.write(f"**Graphics:** {opengl_version}")
     
-    # Modern tabbed interface for detailed analysis
-    st.markdown("---")
-    
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🔒 Permissions", 
-        "⚡ Features", 
-        "🔐 Security", 
-        "📄 Manifest", 
-        "🛠️ Technical"
-    ])
-    
-    with tab1:
+    # Permissions
+    with st.expander("🔒 Permissions", expanded=False):
         permissions = safe_get(data, 'permissions', {})
         
-        # Permission categories with modern styling
+        st.subheader("Declared Permissions")
         declared = permissions.get('declared', [])
-        implied = permissions.get('implied', [])
-        optional = permissions.get('optional', [])
-        
-        if declared or implied or optional:
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.markdown("##### 🔴 Required Permissions")
-                if declared:
-                    for perm in declared:
-                        clean_perm = perm.replace('android.permission.', '')
-                        st.markdown(f"• {clean_perm}")
-                else:
-                    st.info("None")
-            
-            with col2:
-                st.markdown("##### 🟡 Implied Permissions")
-                if implied:
-                    for perm in implied:
-                        clean_perm = perm.replace('android.permission.', '')
-                        st.markdown(f"• {clean_perm}")
-                else:
-                    st.info("None")
-            
-            with col3:
-                st.markdown("##### 🟢 Optional Permissions")
-                if optional:
-                    for perm in optional:
-                        clean_perm = perm.replace('android.permission.', '')
-                        st.markdown(f"• {clean_perm}")
-                else:
-                    st.info("None")
+        if declared:
+            for perm in declared:
+                st.write(f"• {perm}")
         else:
-            st.info("No permissions found")
+            st.info("No declared permissions found")
+        
+        st.subheader("Implied Permissions")
+        implied = permissions.get('implied', [])
+        if implied:
+            for perm in implied:
+                st.write(f"• {perm}")
+        else:
+            st.info("No implied permissions found")
+        
+        st.subheader("Optional Permissions")
+        optional = permissions.get('optional', [])
+        if optional:
+            for perm in optional:
+                st.write(f"• {perm}")
+        else:
+            st.info("No optional permissions found")
     
-    with tab2:
+    # Features
+    with st.expander("⚡ Features", expanded=False):
         features = safe_get(data, 'features', {})
         
+        st.subheader("Required Features")
         required = features.get('required', [])
-        implied = features.get('implied', [])
-        not_required = features.get('not_required', [])
-        
-        if required or implied or not_required:
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.markdown("##### ✅ Required Features")
-                if required:
-                    for feat in required[:10]:  # Limit display
-                        clean_feat = feat.replace('android.hardware.', '').replace('android.software.', '')
-                        st.markdown(f"• {clean_feat}")
-                    if len(required) > 10:
-                        st.info(f"... and {len(required) - 10} more")
-                else:
-                    st.info("None")
-            
-            with col2:
-                st.markdown("##### 💡 Implied Features")
-                if implied:
-                    for feat in implied[:10]:
-                        clean_feat = feat.replace('android.hardware.', '').replace('android.software.', '')
-                        st.markdown(f"• {clean_feat}")
-                    if len(implied) > 10:
-                        st.info(f"... and {len(implied) - 10} more")
-                else:
-                    st.info("None")
-            
-            with col3:
-                st.markdown("##### ➖ Not Required")
-                if not_required:
-                    for feat in not_required[:10]:
-                        clean_feat = feat.replace('android.hardware.', '').replace('android.software.', '')
-                        st.markdown(f"• {clean_feat}")
-                    if len(not_required) > 10:
-                        st.info(f"... and {len(not_required) - 10} more")
-                else:
-                    st.info("None")
+        if required:
+            for feat in required:
+                st.write(f"• {feat}")
         else:
-            st.info("No features information available")
+            st.info("No required features found")
+        
+        st.subheader("Implied Features")
+        implied = features.get('implied', [])
+        if implied:
+            for feat in implied:
+                st.write(f"• {feat}")
+        else:
+            st.info("No implied features found")
+        
+        st.subheader("Not Required Features")
+        not_required = features.get('not_required', [])
+        if not_required:
+            for feat in not_required:
+                st.write(f"• {feat}")
+        else:
+            st.info("No not-required features found")
     
-    with tab3:
+    # Signature Details
+    with st.expander("🔐 Signature Details", expanded=False):
         signature = safe_get(data, 'signature', {})
         
         if signature:
-            # Security overview metrics
-            col1, col2, col3 = st.columns(3)
+            st.subheader("SIGNATURE")
+            
+            # Create a table-like display for signature information
+            col1, col2 = st.columns([1, 2])
             
             with col1:
+                st.write("**Signer**")
+                st.write("**Valid from**")
+                st.write("**Valid until**") 
+                st.write("**Algorithm**")
+                st.write("")
+                
+                # Verification schemes
                 schemes = signature.get('schemes', {})
-                verified_count = sum(1 for status in schemes.values() if status)
-                st.metric("Signature Schemes", f"{verified_count}/{len(schemes)}")
+                for scheme_name in schemes.keys():
+                    if 'v1' in scheme_name.lower():
+                        st.write("**Verified scheme v1 (JAR signing)**")
+                    elif 'v2' in scheme_name.lower():
+                        st.write("**Verified scheme v2 (APK Signature Scheme v2)**")
+                    elif 'v3' in scheme_name.lower():
+                        st.write("**Verified scheme v3 (APK Signature Scheme v3)**")
+                    elif 'v3.1' in scheme_name.lower():
+                        st.write("**Verified scheme v3.1 (APK Signature Scheme v3.1)**")
+                    elif 'v4' in scheme_name.lower():
+                        st.write("**Verified scheme v4 (APK Signature Scheme v4)**")
             
             with col2:
-                algorithm = safe_get(signature, 'algorithm', 'Unknown')
-                st.metric("Algorithm", algorithm)
-            
-            with col3:
-                # Check if signature is valid (simplified)
-                is_valid = any(schemes.values()) if schemes else False
-                status = "Valid" if is_valid else "Invalid"
-                st.metric("Status", status)
-            
-            st.divider()
-            
-            # Detailed signature information
-            st.markdown("##### Certificate Details")
-            signer_info = safe_get(signature, 'signer', 'Unknown')
-            if 'CN=' in signer_info:
-                # Parse certificate subject
-                parts = signer_info.split(',')
-                for part in parts:
-                    if '=' in part:
-                        key, value = part.strip().split('=', 1)
-                        st.markdown(f"**{key}:** {value}")
-            else:
-                st.markdown(f"**Signer:** {signer_info}")
-            
-            col_from, col_until = st.columns(2)
-            with col_from:
-                st.markdown(f"**Valid From:** {safe_get(signature, 'valid_from', 'Unknown')}")
-            with col_until:
-                st.markdown(f"**Valid Until:** {safe_get(signature, 'valid_until', 'Unknown')}")
-            
-            # Verification schemes with status indicators
-            st.markdown("##### Verification Schemes")
-            for scheme_name, status in schemes.items():
-                icon = "✅" if status else "❌"
-                clean_name = scheme_name.replace('_', ' ').title()
-                st.markdown(f"{icon} {clean_name}")
+                # Extract detailed signer information
+                signer_info = safe_get(signature, 'signer', 'Unknown')
+                if 'CN=' in signer_info:
+                    # Parse the full certificate subject
+                    st.write(signer_info)
+                else:
+                    st.write(signer_info)
+                
+                st.write(safe_get(signature, 'valid_from', 'Unknown'))
+                st.write(safe_get(signature, 'valid_until', 'Unknown'))
+                st.write(safe_get(signature, 'algorithm', 'Unknown'))
+                st.write("")
+                
+                # Verification status with proper formatting
+                for scheme_name, status in schemes.items():
+                    if status:
+                        st.write("Yes")
+                    else:
+                        st.write("No")
         else:
             st.warning("No signature information found")
-        
-        # Unity check
+    
+    # Unity Export Check
+    with st.expander("🎮 Unity Export Check", expanded=False):
         unity_exported = safe_get(data, 'unity_exported', None)
         if unity_exported is not None:
-            st.divider()
-            st.markdown("##### Unity Application Analysis")
             if unity_exported:
-                st.warning("🎮 Unity exported: YES - Potential security considerations")
-                st.info("Unity applications with exported main activity may have additional security considerations.")
+                st.info("ℹ️ Unity main activity has android:exported='true'")
             else:
-                st.success("🎮 Unity exported: NO - Standard security profile")
+                st.success("✅ Unity main activity does not have android:exported='true'")
+        else:
+            st.info("ℹ️ No Unity main activity found or unable to determine export status")
     
-    with tab4:
+    # Additional Details
+    with st.expander("📋 Additional Details", expanded=False):
+        st.subheader("Screen Support")
+        screens = safe_get(data, 'supported_screens', [])
+        if screens:
+            for screen in screens:
+                st.write(f"• {screen}")
+        else:
+            st.info("Screen support information not available")
+        
+        st.subheader("Density Support")
+        densities = safe_get(data, 'supported_densities', [])
+        if densities:
+            for density in densities:
+                st.write(f"• {density}")
+        else:
+            st.info("Density support information not available")
+    
+    # Android Manifest
+    with st.expander("📄 Android Manifest XML", expanded=False):
         manifest_xml = safe_get(data, 'manifest_xml', None)
         if manifest_xml:
             # Create tabs for different viewing options
-            manifest_tab1, manifest_tab2 = st.tabs(["📋 Formatted View", "💻 Raw XML"])
+            tab1, tab2 = st.tabs(["📋 Formatted View", "💻 Raw XML"])
             
-            with manifest_tab1:
+            with tab1:
                 # Pretty formatted version with better readability
                 try:
                     import xml.dom.minidom
@@ -417,7 +346,7 @@ def display_apk_analysis(data, filename):
                     # Fallback to original if pretty printing fails
                     st.code(manifest_xml, language='xml', line_numbers=True)
             
-            with manifest_tab2:
+            with tab2:
                 # Raw XML in a scrollable text area
                 st.text_area(
                     "Raw AndroidManifest.xml", 
@@ -436,56 +365,6 @@ def display_apk_analysis(data, filename):
             )
         else:
             st.warning("Android Manifest XML not available")
-    
-    with tab5:
-        # Technical Details
-        st.markdown("##### 📊 File Analysis")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Activities**")
-            activities = safe_get(data, 'activities', [])
-            st.metric("Count", len(activities))
-            if activities:
-                with st.expander("View Activities"):
-                    for activity in activities[:10]:
-                        st.markdown(f"• {activity}")
-                    if len(activities) > 10:
-                        st.info(f"... and {len(activities) - 10} more")
-        
-        with col2:
-            st.markdown("**Services**")
-            services = safe_get(data, 'services', [])
-            st.metric("Count", len(services))
-            if services:
-                with st.expander("View Services"):
-                    for service in services[:10]:
-                        st.markdown(f"• {service}")
-                    if len(services) > 10:
-                        st.info(f"... and {len(services) - 10} more")
-        
-        # Screen and Density Support
-        st.divider()
-        st.markdown("##### 📱 Display Support")
-        
-        col3, col4 = st.columns(2)
-        with col3:
-            st.markdown("**Screen Sizes**")
-            screens = safe_get(data, 'supported_screens', [])
-            if screens:
-                for screen in screens:
-                    st.markdown(f"• {screen}")
-            else:
-                st.info("Not specified")
-        
-        with col4:
-            st.markdown("**Density Support**")
-            densities = safe_get(data, 'supported_densities', [])
-            if densities:
-                for density in densities:
-                    st.markdown(f"• {density}")
-            else:
-                st.info("Not specified")
 
 def display_apk_comparison(data1, data2, comparison, filename1, filename2):
     st.success(f"✅ Successfully compared: {filename1} vs {filename2}")
