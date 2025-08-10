@@ -155,15 +155,21 @@ class SignatureAnalyzer:
                             break
                     
                     # Calculate certificate fingerprints
-                    cert_der = cert.public_bytes(serialization.Encoding.DER)
-                    sha256_digest = hashlib.sha256(cert_der).hexdigest()
-                    sha1_digest = hashlib.sha1(cert_der).hexdigest()
-                    md5_digest = hashlib.md5(cert_der).hexdigest()
-                    
-                    # Format fingerprints with colons for readability
-                    sha256_formatted = ':'.join(sha256_digest[i:i+2] for i in range(0, len(sha256_digest), 2)).upper()
-                    sha1_formatted = ':'.join(sha1_digest[i:i+2] for i in range(0, len(sha1_digest), 2)).upper()
-                    md5_formatted = ':'.join(md5_digest[i:i+2] for i in range(0, len(md5_digest), 2)).upper()
+                    try:
+                        cert_der = cert.public_bytes(serialization.Encoding.DER)
+                        sha256_digest = hashlib.sha256(cert_der).hexdigest()
+                        sha1_digest = hashlib.sha1(cert_der).hexdigest()
+                        md5_digest = hashlib.md5(cert_der).hexdigest()
+                        
+                        # Format fingerprints with colons for readability
+                        sha256_formatted = ':'.join(sha256_digest[i:i+2] for i in range(0, len(sha256_digest), 2)).upper()
+                        sha1_formatted = ':'.join(sha1_digest[i:i+2] for i in range(0, len(sha1_digest), 2)).upper()
+                        md5_formatted = ':'.join(md5_digest[i:i+2] for i in range(0, len(md5_digest), 2)).upper()
+                    except Exception as fingerprint_error:
+                        # If fingerprint calculation fails, set to debug info
+                        sha256_formatted = f"Fingerprint calculation failed: {str(fingerprint_error)}"
+                        sha1_formatted = "Fingerprint calculation failed"
+                        md5_formatted = "Fingerprint calculation failed"
                     
                     return {
                         'signer': subject_cn,
@@ -176,8 +182,23 @@ class SignatureAnalyzer:
                         'sha1_digest': sha1_formatted,
                         'md5_digest': md5_formatted
                     }
-                except Exception:
-                    pass
+                except Exception as cert_error:
+                    # Debug: capture what went wrong
+                    sha256_formatted = f"Cert extraction failed: {str(cert_error)}"
+                    sha1_formatted = "Cert extraction failed"
+                    md5_formatted = "Cert extraction failed"
+                    
+                    return {
+                        'signer': subject_cn if 'subject_cn' in locals() else 'Cert extracted but fingerprint failed',
+                        'valid_from': valid_from if 'valid_from' in locals() else 'Unknown',
+                        'valid_until': valid_until if 'valid_until' in locals() else 'Unknown',
+                        'algorithm': algorithm,
+                        'subject': subject if 'subject' in locals() else 'Unknown',
+                        'issuer': issuer if 'issuer' in locals() else 'Unknown',
+                        'sha256_digest': sha256_formatted,
+                        'sha1_digest': sha1_formatted,
+                        'md5_digest': md5_formatted
+                    }
             
             # Fallback: basic info with certificate file hash if no certificate could be extracted
             # Calculate hash of the certificate file itself as a fallback
