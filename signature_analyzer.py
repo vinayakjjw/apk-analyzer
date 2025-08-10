@@ -76,7 +76,7 @@ class SignatureAnalyzer:
             return None
     
     def _parse_certificate_basic_info(self, cert_data, filename):
-        """Parse basic certificate information"""
+        """Parse basic certificate information with improved PKCS#7 handling"""
         try:
             # Extract algorithm from filename
             if filename.endswith('.RSA'):
@@ -88,66 +88,129 @@ class SignatureAnalyzer:
             else:
                 algorithm = 'Unknown'
             
-            # Try to extract certificate from PKCS#7 structure
+            # Try multiple approaches to extract certificate
+            cert = None
+            
+            # Approach 1: Try PKCS#7 parsing
             try:
                 from cryptography.hazmat.primitives.serialization import pkcs7
                 from cryptography.hazmat.primitives import serialization
                 
-                # Parse PKCS#7 structure
-                try:
-                    # Try parsing as DER-encoded PKCS#7
-                    certs = pkcs7.load_der_pkcs7_certificates(cert_data)
-                    if certs:
-                        cert = certs[0]  # Get the first certificate
-                        
-                        # Extract certificate details
-                        subject = cert.subject.rfc4514_string()
-                        issuer = cert.issuer.rfc4514_string()
-                        valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
-                        valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
-                        
-                        # Extract CN from subject
-                        subject_cn = "Unknown"
-                        for attribute in cert.subject:
-                            if attribute.oid._name == 'commonName':
-                                subject_cn = attribute.value
-                                break
-                        
-                        # Calculate certificate fingerprints
-                        cert_der = cert.public_bytes(serialization.Encoding.DER)
-                        sha256_digest = hashlib.sha256(cert_der).hexdigest()
-                        sha1_digest = hashlib.sha1(cert_der).hexdigest()
-                        md5_digest = hashlib.md5(cert_der).hexdigest()
-                        
-                        # Format fingerprints with colons for readability
-                        sha256_formatted = ':'.join(sha256_digest[i:i+2] for i in range(0, len(sha256_digest), 2)).upper()
-                        sha1_formatted = ':'.join(sha1_digest[i:i+2] for i in range(0, len(sha1_digest), 2)).upper()
-                        md5_formatted = ':'.join(md5_digest[i:i+2] for i in range(0, len(md5_digest), 2)).upper()
-                        
-                        return {
-                            'signer': subject_cn,
-                            'valid_from': valid_from,
-                            'valid_until': valid_until,
-                            'algorithm': algorithm,
-                            'subject': subject,
-                            'issuer': issuer,
-                            'sha256_digest': sha256_formatted,
-                            'sha1_digest': sha1_formatted,
-                            'md5_digest': md5_formatted
-                        }
-                except Exception:
-                    # If PKCS#7 parsing fails, try alternative parsing
-                    pass
-                    
-            except ImportError:
+                # Try parsing as DER-encoded PKCS#7
+                certs = pkcs7.load_der_pkcs7_certificates(cert_data)
+                if certs and len(certs) > 0:
+                    cert = certs[0]
+            except Exception as e:
+                # PKCS#7 parsing failed, try other approaches
                 pass
             
-            # Fallback: basic info extraction
+            # Approach 2: Try parsing as raw X.509 certificate (sometimes certificates are embedded)
+            if cert is None:
+                try:
+                    from cryptography import x509
+                    from cryptography.hazmat.primitives import serialization
+                    
+                    # Look for DER-encoded certificate in the data
+                    # Sometimes the certificate is embedded in the PKCS#7 structure
+                    # Try to find certificate markers in the binary data
+                    
+                    # Search for ASN.1 certificate sequence starting bytes
+                    for i in range(len(cert_data) - 4):
+                        # Look for certificate sequence (0x30 followed by length)
+                        if cert_data[i:i+2] == b'\x30\x82':
+                            try:
+                                # Try parsing from this position
+                                remaining_data = cert_data[i:]
+                                cert = x509.load_der_x509_certificate(remaining_data)
+                                break
+                            except:
+                                continue
+                        elif cert_data[i:i+2] == b'\x30\x81':
+                            try:
+                                # Try parsing from this position (shorter length encoding)
+                                remaining_data = cert_data[i:]
+                                cert = x509.load_der_x509_certificate(remaining_data)
+                                break
+                            except:
+                                continue
+                except Exception:
+                    pass
+            
+            # If we successfully extracted a certificate, get its details
+            if cert is not None:
+                try:
+                    from cryptography.hazmat.primitives import serialization
+                    
+                    # Extract certificate details
+                    subject = cert.subject.rfc4514_string()
+                    issuer = cert.issuer.rfc4514_string()
+                    valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    
+                    # Extract CN from subject
+                    subject_cn = "Unknown"
+                    for attribute in cert.subject:
+                        if attribute.oid._name == 'commonName':
+                            subject_cn = attribute.value
+                            break
+                    
+                    # Calculate certificate fingerprints
+                    cert_der = cert.public_bytes(serialization.Encoding.DER)
+                    sha256_digest = hashlib.sha256(cert_der).hexdigest()
+                    sha1_digest = hashlib.sha1(cert_der).hexdigest()
+                    md5_digest = hashlib.md5(cert_der).hexdigest()
+                    
+                    # Format fingerprints with colons for readability
+                    sha256_formatted = ':'.join(sha256_digest[i:i+2] for i in range(0, len(sha256_digest), 2)).upper()
+                    sha1_formatted = ':'.join(sha1_digest[i:i+2] for i in range(0, len(sha1_digest), 2)).upper()
+                    md5_formatted = ':'.join(md5_digest[i:i+2] for i in range(0, len(md5_digest), 2)).upper()
+                    
+                    return {
+                        'signer': subject_cn,
+                        'valid_from': valid_from,
+                        'valid_until': valid_until,
+                        'algorithm': algorithm,
+                        'subject': subject,
+                        'issuer': issuer,
+                        'sha256_digest': sha256_formatted,
+                        'sha1_digest': sha1_formatted,
+                        'md5_digest': md5_formatted
+                    }
+                except Exception:
+                    pass
+            
+            # Fallback: basic info with certificate file hash if no certificate could be extracted
+            # Calculate hash of the certificate file itself as a fallback
+            try:
+                sha256_file = hashlib.sha256(cert_data).hexdigest()
+                sha1_file = hashlib.sha1(cert_data).hexdigest()
+                md5_file = hashlib.md5(cert_data).hexdigest()
+                
+                sha256_formatted = ':'.join(sha256_file[i:i+2] for i in range(0, len(sha256_file), 2)).upper()
+                sha1_formatted = ':'.join(sha1_file[i:i+2] for i in range(0, len(sha1_file), 2)).upper()
+                md5_formatted = ':'.join(md5_file[i:i+2] for i in range(0, len(md5_file), 2)).upper()
+                
+                return {
+                    'signer': 'Certificate parsing failed - using file hash',
+                    'valid_from': 'Unknown',
+                    'valid_until': 'Unknown',
+                    'algorithm': algorithm,
+                    'sha256_digest': sha256_formatted + ' (file hash)',
+                    'sha1_digest': sha1_formatted + ' (file hash)',
+                    'md5_digest': md5_formatted + ' (file hash)'
+                }
+            except Exception:
+                pass
+            
+            # Final fallback
             return {
-                'signer': 'Certificate found (detailed parsing not available)',
-                'valid_from': 'Certificate parsing requires additional libraries',
-                'valid_until': 'Certificate parsing requires additional libraries',
-                'algorithm': algorithm
+                'signer': 'Certificate found but parsing failed',
+                'valid_from': 'Unknown',
+                'valid_until': 'Unknown',
+                'algorithm': algorithm,
+                'sha256_digest': 'Unknown',
+                'sha1_digest': 'Unknown',
+                'md5_digest': 'Unknown'
             }
             
         except Exception:
@@ -155,7 +218,10 @@ class SignatureAnalyzer:
                 'signer': 'Error parsing certificate',
                 'valid_from': 'Unknown',
                 'valid_until': 'Unknown',
-                'algorithm': 'Unknown'
+                'algorithm': 'Unknown',
+                'sha256_digest': 'Unknown',
+                'sha1_digest': 'Unknown',
+                'md5_digest': 'Unknown'
             }
     
     def _check_signature_schemes(self):
