@@ -139,25 +139,33 @@ def display_apk_analysis(data, filename):
         app_icon = safe_get(data, 'app_icon', None)
         if app_icon:
             try:
+                from io import BytesIO
                 col_icon, col_info = st.columns([1, 4])
                 with col_icon:
-                    st.image(app_icon, width=100, caption="App Icon")
+                    # Convert bytes to BytesIO for Streamlit
+                    if isinstance(app_icon, bytes):
+                        icon_stream = BytesIO(app_icon)
+                        st.image(icon_stream, width=100, caption="App Icon")
+                    else:
+                        st.image(app_icon, width=100, caption="App Icon")
                 with col_info:
                     st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
                     st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
                     st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
                     st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
-            except:
-                # If icon display fails, just show info without icon
+            except Exception as e:
+                # If icon display fails, show debug info and continue without icon
                 st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
                 st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
                 st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
                 st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+                st.info(f"📱 Icon available but couldn't display: {type(app_icon)} - {len(app_icon) if hasattr(app_icon, '__len__') else 'N/A'} bytes")
         else:
             st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
             st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
             st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
             st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+            st.info("📱 No app icon found")
         
         st.write(f"**Min OS:** API {safe_get(data, 'min_sdk_version', 'Unknown')}")
         st.write(f"**Target OS:** API {safe_get(data, 'target_sdk_version', 'Unknown')}")
@@ -314,8 +322,42 @@ def display_apk_analysis(data, filename):
     with st.expander("📄 Android Manifest XML", expanded=False):
         manifest_xml = safe_get(data, 'manifest_xml', None)
         if manifest_xml:
-            # Use a text area with proper height for vertical scrolling
-            st.text_area("AndroidManifest.xml", value=manifest_xml, height=400, label_visibility="collapsed")
+            # Create tabs for different viewing options
+            tab1, tab2 = st.tabs(["📋 Formatted View", "💻 Raw XML"])
+            
+            with tab1:
+                # Pretty formatted version with better readability
+                try:
+                    import xml.dom.minidom
+                    # Parse and pretty print the XML
+                    dom = xml.dom.minidom.parseString(manifest_xml)
+                    pretty_xml = dom.toprettyxml(indent="  ")
+                    # Remove empty lines
+                    pretty_lines = [line for line in pretty_xml.split('\n') if line.strip()]
+                    pretty_xml = '\n'.join(pretty_lines)
+                    
+                    st.code(pretty_xml, language='xml', line_numbers=True)
+                except:
+                    # Fallback to original if pretty printing fails
+                    st.code(manifest_xml, language='xml', line_numbers=True)
+            
+            with tab2:
+                # Raw XML in a scrollable text area
+                st.text_area(
+                    "Raw AndroidManifest.xml", 
+                    value=manifest_xml, 
+                    height=500, 
+                    label_visibility="collapsed",
+                    help="Raw XML content with vertical scrolling"
+                )
+                
+            # Add download button
+            st.download_button(
+                label="📥 Download AndroidManifest.xml",
+                data=manifest_xml,
+                file_name="AndroidManifest.xml",
+                mime="application/xml"
+            )
         else:
             st.warning("Android Manifest XML not available")
 

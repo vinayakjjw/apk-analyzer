@@ -518,10 +518,74 @@ class APKAnalyzer:
             # Method 1: Use androguard's built-in method
             try:
                 icon_data = self.apk_obj.get_app_icon()
-                if icon_data:
+                if icon_data and len(icon_data) > 0:
                     return icon_data
-            except:
-                pass
+            except Exception as e:
+                print(f"Built-in icon method failed: {e}")
+            
+            # Method 2: Extract from resources.arsc and find icon files
+            try:
+                # Get the icon resource ID from manifest
+                manifest = self.apk_obj.get_android_manifest_xml()
+                app_element = manifest.find('application')
+                if app_element is not None:
+                    icon_attr = app_element.get('{http://schemas.android.com/apk/res/android}icon')
+                    if icon_attr:
+                        # Try to find the actual icon file
+                        with zipfile.ZipFile(self.apk_path, 'r') as z:
+                            # Look for common icon paths
+                            icon_paths = [
+                                'res/drawable/ic_launcher.png',
+                                'res/drawable-hdpi/ic_launcher.png',
+                                'res/drawable-mdpi/ic_launcher.png',
+                                'res/drawable-xhdpi/ic_launcher.png',
+                                'res/drawable-xxhdpi/ic_launcher.png',
+                                'res/drawable-xxxhdpi/ic_launcher.png',
+                                'res/mipmap/ic_launcher.png',
+                                'res/mipmap-hdpi/ic_launcher.png',
+                                'res/mipmap-mdpi/ic_launcher.png',
+                                'res/mipmap-xhdpi/ic_launcher.png',
+                                'res/mipmap-xxhdpi/ic_launcher.png',
+                                'res/mipmap-xxxhdpi/ic_launcher.png',
+                            ]
+                            
+                            # Try each icon path
+                            for icon_path in icon_paths:
+                                try:
+                                    icon_data = z.read(icon_path)
+                                    if icon_data and len(icon_data) > 0:
+                                        return icon_data
+                                except KeyError:
+                                    continue
+                            
+                            # If specific paths don't work, search for any ic_launcher files
+                            for file_path in z.namelist():
+                                if 'ic_launcher' in file_path and file_path.endswith(('.png', '.jpg', '.jpeg')):
+                                    try:
+                                        icon_data = z.read(file_path)
+                                        if icon_data and len(icon_data) > 0:
+                                            return icon_data
+                                    except:
+                                        continue
+            except Exception as e:
+                print(f"Resource-based icon extraction failed: {e}")
+            
+            # Method 3: Search for any application icon in common directories
+            try:
+                with zipfile.ZipFile(self.apk_path, 'r') as z:
+                    # Search for icon files in common patterns
+                    for file_path in z.namelist():
+                        if (('icon' in file_path.lower() or 'launcher' in file_path.lower()) and 
+                            file_path.endswith(('.png', '.jpg', '.jpeg')) and
+                            'res/' in file_path):
+                            try:
+                                icon_data = z.read(file_path)
+                                if icon_data and len(icon_data) > 0:
+                                    return icon_data
+                            except:
+                                continue
+            except Exception as e:
+                print(f"General icon search failed: {e}")
             
             # Method 2: Manual extraction from common icon locations
             try:
