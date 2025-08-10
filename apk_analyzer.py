@@ -285,9 +285,11 @@ class APKAnalyzer:
             
             # Use androguard's certificate methods
             try:
-                certs = self.apk_obj.get_certificates()
-                if certs:
-                    cert = certs[0]  # Get first certificate
+                # Try different certificate extraction methods
+                cert_der = self.apk_obj.get_certificate_der(0)
+                if cert_der:
+                    from cryptography import x509
+                    cert = x509.load_der_x509_certificate(cert_der)
                     
                     # Extract certificate information
                     subject = cert.subject.rfc4514_string()
@@ -297,18 +299,55 @@ class APKAnalyzer:
                     # Extract CN from subject
                     subject_cn = "Unknown"
                     for attribute in cert.subject:
-                        if hasattr(attribute.oid, '_name') and attribute.oid._name == 'commonName':
+                        if attribute.oid._name == 'commonName':
                             subject_cn = attribute.value
                             break
+                    
+                    # Get algorithm name
+                    algo_name = cert.signature_algorithm_oid._name
+                    if 'sha256' in algo_name.lower():
+                        if 'rsa' in algo_name.lower():
+                            algorithm = 'RSA with SHA-256'
+                        elif 'ecdsa' in algo_name.lower():
+                            algorithm = 'ECDSA with SHA-256'
+                        else:
+                            algorithm = algo_name
+                    else:
+                        algorithm = algo_name
                     
                     signature_data.update({
                         'signer': subject_cn,
                         'valid_from': valid_from,
                         'valid_until': valid_until,
-                        'algorithm': cert.signature_algorithm_oid._name if hasattr(cert.signature_algorithm_oid, '_name') else 'Unknown'
+                        'algorithm': algorithm,
+                        'subject': subject
                     })
+                else:
+                    # Try alternative method
+                    certs = self.apk_obj.get_certificates()
+                    if certs:
+                        cert = certs[0]
+                        subject = cert.subject.rfc4514_string()
+                        valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        
+                        subject_cn = "Unknown"
+                        for attribute in cert.subject:
+                            if attribute.oid._name == 'commonName':
+                                subject_cn = attribute.value
+                                break
+                        
+                        signature_data.update({
+                            'signer': subject_cn,
+                            'valid_from': valid_from,
+                            'valid_until': valid_until,
+                            'algorithm': cert.signature_algorithm_oid._name,
+                            'subject': subject
+                        })
+                        
             except Exception as cert_error:
                 # Fallback to basic certificate analysis
+                print(f"Certificate parsing error: {cert_error}")
                 pass
             
             # Check signature schemes using androguard methods
@@ -459,21 +498,50 @@ class APKAnalyzer:
     def _get_manifest_xml(self):
         """Get formatted Android Manifest XML"""
         try:
-            # Get the raw manifest XML
+            # Get the parsed manifest XML tree
             manifest = self.apk_obj.get_android_manifest_xml()
             if manifest is not None:
-                # Convert the XML tree to string
+                # Convert the XML tree to string with proper formatting
                 import xml.etree.ElementTree as ET
-                return ET.tostring(manifest.getroot(), encoding='unicode', method='xml')
+                
+                # Add proper indentation for readability
+                def indent(elem, level=0):
+                    i = "\n" + level*"  "
+                    if len(elem):
+                        if not elem.text or not elem.text.strip():
+                            elem.text = i + "  "
+                        if not elem.tail or not elem.tail.strip():
+                            elem.tail = i
+                        for elem in elem:
+                            indent(elem, level+1)
+                        if not elem.tail or not elem.tail.strip():
+                            elem.tail = i
+                    else:
+                        if level and (not elem.tail or not elem.tail.strip()):
+                            elem.tail = i
+                
+                root = manifest.getroot()
+                indent(root)
+                xml_string = ET.tostring(root, encoding='unicode', method='xml')
+                
+                # Add XML declaration
+                if not xml_string.startswith('<?xml'):
+                    xml_string = '<?xml version="1.0" encoding="utf-8"?>\n' + xml_string
+                
+                return xml_string
             return None
         except Exception as e:
             try:
-                # Fallback: try to get manifest as string directly
-                with zipfile.ZipFile(self.apk_path, 'r') as z:
-                    if 'AndroidManifest.xml' in z.namelist():
-                        manifest_data = z.read('AndroidManifest.xml')
-                        # This will be binary AXML format, we'll need to parse it
-                        return "Raw AndroidManifest.xml (Binary AXML format - needs parsing)"
-                return None
+                # Alternative: use androguard's AXML parser directly
+                from androguard.core.axml import AXML
+                axml = AXML(self.apk_obj.get_android_manifest_axml().get_xml())
+                return axml.get_xml()
             except:
-                return None
+                try:
+                    # Final fallback: raw AXML content notification
+                    with zipfile.ZipFile(self.apk_path, 'r') as z:
+                        if 'AndroidManifest.xml' in z.namelist():
+                            return "AndroidManifest.xml found but parsing failed. The file is in binary AXML format."
+                    return None
+                except:
+                    return None

@@ -291,16 +291,16 @@ def display_apk_comparison(data1, data2, comparison, filename1, filename2):
         with col3:
             st.metric("Signature Match", "Yes" if comparison.get('signature_match', False) else "No")
     
-    # Side-by-side comparison
+    # Side-by-side detailed comparison
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader(f"📱 {filename1}")
-        display_apk_summary(data1)
+        display_apk_detailed_summary(data1)
     
     with col2:
         st.subheader(f"📱 {filename2}")
-        display_apk_summary(data2)
+        display_apk_detailed_summary(data2)
     
     # Differences
     with st.expander("🔍 Detailed Differences", expanded=False):
@@ -331,6 +331,70 @@ def display_apk_summary(data):
     features = safe_get(data, 'features', {})
     total_features = len(features.get('required', []))
     st.write(f"**Features:** {total_features}")
+
+def display_apk_detailed_summary(data):
+    """Display detailed APK summary for comparison mode"""
+    
+    # Basic Info
+    st.write("**Basic Information**")
+    st.write(f"• App Name: {safe_get(data, 'app_name', 'Unknown')}")
+    st.write(f"• Package: {safe_get(data, 'package_name', 'Unknown')}")
+    st.write(f"• Version: {safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})")
+    st.write(f"• Min SDK: API {safe_get(data, 'min_sdk_version', 'Unknown')}")
+    st.write(f"• Target SDK: API {safe_get(data, 'target_sdk_version', 'Unknown')}")
+    st.write(f"• Size: {format_size(safe_get(data, 'file_size', 0))}")
+    st.write(f"• Architecture: {safe_get(data, 'architectures', 'Unknown')}")
+    st.write(f"• Debuggable: {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
+    
+    st.write("")
+    st.write("**Permissions**")
+    permissions = safe_get(data, 'permissions', {})
+    declared = permissions.get('declared', [])
+    if declared:
+        for perm in declared[:5]:  # Show first 5
+            st.write(f"• {perm}")
+        if len(declared) > 5:
+            st.write(f"• ... and {len(declared) - 5} more")
+    else:
+        st.write("• No permissions declared")
+    
+    st.write("")
+    st.write("**Features**")
+    features = safe_get(data, 'features', {})
+    required = features.get('required', [])
+    if required:
+        for feat in required[:5]:  # Show first 5
+            st.write(f"• {feat}")
+        if len(required) > 5:
+            st.write(f"• ... and {len(required) - 5} more")
+    else:
+        st.write("• No features required")
+    
+    st.write("")
+    st.write("**Signature**")
+    signature = safe_get(data, 'signature', {})
+    if signature:
+        st.write(f"• Signer: {safe_get(signature, 'signer', 'Unknown')}")
+        st.write(f"• Valid From: {safe_get(signature, 'valid_from', 'Unknown')}")
+        st.write(f"• Algorithm: {safe_get(signature, 'algorithm', 'Unknown')}")
+        
+        schemes = signature.get('schemes', {})
+        verified_schemes = [scheme for scheme, status in schemes.items() if status]
+        if verified_schemes:
+            st.write(f"• Verified: {', '.join(verified_schemes)}")
+    else:
+        st.write("• No signature information")
+    
+    st.write("")
+    st.write("**Unity Check**")
+    unity_exported = safe_get(data, 'unity_exported', None)
+    if unity_exported is not None:
+        if unity_exported:
+            st.write("• Unity exported: YES (potential security risk)")
+        else:
+            st.write("• Unity exported: NO")
+    else:
+        st.write("• Not a Unity app")
 
 if __name__ == "__main__":
     main()
