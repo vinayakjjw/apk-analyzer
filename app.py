@@ -774,58 +774,81 @@ def display_apk_detailed_summary(data):
     # Security concerns check for comparison mode
     security_concerns = check_security_concerns(data)
     if security_concerns:
-        st.error("🚨 **Concerns Detected**")
+        st.error("🚨 **Security Concerns**")
         for concern in security_concerns:
-            st.warning(concern)
-        st.markdown("---")
+            st.markdown(f"- {concern}")
     
-    # App icon first
-    app_icon = safe_get(data, 'app_icon', None)
-    if app_icon:
-        try:
-            from io import BytesIO
-            # Handle both string and bytes data types
-            if isinstance(app_icon, str):
-                icon_bytes = app_icon.encode('latin-1')
-                icon_stream = BytesIO(icon_bytes)
-            elif isinstance(app_icon, bytes):
-                icon_stream = BytesIO(app_icon)
+    # Create a container for consistent spacing
+    with st.container():
+        # App icon section with fixed height
+        app_icon = safe_get(data, 'app_icon', None)
+        if app_icon:
+            try:
+                from io import BytesIO
+                if isinstance(app_icon, str):
+                    icon_bytes = app_icon.encode('latin-1')
+                    icon_stream = BytesIO(icon_bytes)
+                elif isinstance(app_icon, bytes):
+                    icon_stream = BytesIO(app_icon)
+                else:
+                    icon_stream = app_icon
+                st.image(icon_stream, width=60)
+            except Exception as e:
+                st.info("📱 Icon available")
+        else:
+            st.info("📱 No icon")
+        
+        # Basic Information with consistent formatting
+        st.markdown("**Basic Information**")
+        
+        # Use a more compact format
+        basic_info = [
+            f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}",
+            f"**Package:** {safe_get(data, 'package_name', 'Unknown')}",
+            f"**Version:** {safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})",
+            f"**Min SDK:** API {safe_get(data, 'min_sdk_version', 'Unknown')}",
+            f"**Target SDK:** API {safe_get(data, 'target_sdk_version', 'Unknown')}",
+            f"**Size:** {format_size(safe_get(data, 'file_size', 0))}",
+            f"**Architecture:** {safe_get(data, 'architectures', 'Unknown')}",
+            f"**Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}"
+        ]
+        
+        # Add graphics info if available
+        features = safe_get(data, 'features', {})
+        opengl_version = features.get('opengl_version')
+        if opengl_version:
+            basic_info.append(f"**Graphics:** {opengl_version}")
+        
+        # Display all basic info
+        for info in basic_info:
+            st.markdown(f"• {info}")
+        
+        # Permissions section with fixed height approach
+        st.markdown("**Permissions** (showing first 8)")
+        permissions = safe_get(data, 'permissions', {})
+        declared = permissions.get('declared', [])
+        
+        # Always show exactly 8 lines to maintain alignment
+        if declared:
+            shown_perms = declared[:8]
+            for perm in shown_perms:
+                clean_perm = perm.replace('android.permission.', '')
+                st.markdown(f"• {clean_perm}")
+            
+            # Fill remaining slots with empty lines to maintain consistent height
+            remaining_slots = 8 - len(shown_perms)
+            for _ in range(remaining_slots):
+                st.write("")
+            
+            if len(declared) > 8:
+                st.markdown(f"• *... and {len(declared) - 8} more*")
             else:
-                icon_stream = app_icon
-            st.image(icon_stream, width=80)
-        except Exception as e:
-            st.info(f"📱 Icon available ({type(app_icon).__name__})")
-    else:
-        st.info("📱 No icon")
-    
-    st.markdown("**Basic Information**")
-    st.write(f"• **App Name:** {safe_get(data, 'app_name', 'Unknown')}")
-    st.write(f"• **Package:** {safe_get(data, 'package_name', 'Unknown')}")
-    st.write(f"• **Version:** {safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})")
-    st.write(f"• **Min SDK:** API {safe_get(data, 'min_sdk_version', 'Unknown')}")
-    st.write(f"• **Target SDK:** API {safe_get(data, 'target_sdk_version', 'Unknown')}")
-    st.write(f"• **Size:** {format_size(safe_get(data, 'file_size', 0))}")
-    st.write(f"• **Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
-    st.write(f"• **Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
-    
-    # OpenGL Version
-    features = safe_get(data, 'features', {})
-    opengl_version = features.get('opengl_version')
-    if opengl_version:
-        st.write(f"• **Graphics:** {opengl_version}")
-    
-    
-    st.markdown("**Permissions** (showing first 8)")
-    permissions = safe_get(data, 'permissions', {})
-    declared = permissions.get('declared', [])
-    if declared:
-        for perm in declared[:8]:  # Show first 8
-            clean_perm = perm.replace('android.permission.', '')
-            st.write(f"• {clean_perm}")
-        if len(declared) > 8:
-            st.write(f"• ... and {len(declared) - 8} more")
-    else:
-        st.write("• No permissions declared")
+                st.write("")
+        else:
+            st.markdown("• No permissions declared")
+            # Add 8 empty lines to match the height when permissions are present
+            for _ in range(8):
+                st.write("")
 
 if __name__ == "__main__":
     main()
