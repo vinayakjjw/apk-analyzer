@@ -84,12 +84,51 @@ class SignatureAnalyzer:
             else:
                 algorithm = 'Unknown'
             
-            # For demonstration, return basic info
-            # In a real implementation, you'd parse the PKCS#7 structure
+            # Try to extract certificate from PKCS#7 structure
+            try:
+                from cryptography.hazmat.primitives.serialization import pkcs7
+                from cryptography.hazmat.primitives import serialization
+                
+                # Parse PKCS#7 structure
+                try:
+                    # Try parsing as DER-encoded PKCS#7
+                    certs = pkcs7.load_der_pkcs7_certificates(cert_data)
+                    if certs:
+                        cert = certs[0]  # Get the first certificate
+                        
+                        # Extract certificate details
+                        subject = cert.subject.rfc4514_string()
+                        issuer = cert.issuer.rfc4514_string()
+                        valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        
+                        # Extract CN from subject
+                        subject_cn = "Unknown"
+                        for attribute in cert.subject:
+                            if attribute.oid._name == 'commonName':
+                                subject_cn = attribute.value
+                                break
+                        
+                        return {
+                            'signer': subject_cn,
+                            'valid_from': valid_from,
+                            'valid_until': valid_until,
+                            'algorithm': algorithm,
+                            'subject': subject,
+                            'issuer': issuer
+                        }
+                except Exception:
+                    # If PKCS#7 parsing fails, try alternative parsing
+                    pass
+                    
+            except ImportError:
+                pass
+            
+            # Fallback: basic info extraction
             return {
-                'signer': 'Certificate found',
-                'valid_from': 'Unknown (certificate parsing needed)',
-                'valid_until': 'Unknown (certificate parsing needed)',
+                'signer': 'Certificate found (detailed parsing not available)',
+                'valid_from': 'Certificate parsing requires additional libraries',
+                'valid_until': 'Certificate parsing requires additional libraries',
                 'algorithm': algorithm
             }
             

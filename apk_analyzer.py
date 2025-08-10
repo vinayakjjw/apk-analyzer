@@ -268,10 +268,70 @@ class APKAnalyzer:
     def _analyze_signature(self):
         """Analyze APK signature"""
         try:
-            signature_analyzer = SignatureAnalyzer(self.apk_path)
-            return signature_analyzer.analyze()
+            # Try to use androguard's built-in certificate methods first
+            signature_data = {
+                'signer': 'Unknown',
+                'valid_from': 'Unknown',
+                'valid_until': 'Unknown',
+                'algorithm': 'Unknown',
+                'schemes': {
+                    'v1 (JAR signing)': False,
+                    'v2 (APK Signature Scheme v2)': False,
+                    'v3 (APK Signature Scheme v3)': False,
+                    'v3.1 (APK Signature Scheme v3.1)': False,
+                    'v4 (APK Signature Scheme v4)': False
+                }
+            }
+            
+            # Use androguard's certificate methods
+            try:
+                certs = self.apk_obj.get_certificates()
+                if certs:
+                    cert = certs[0]  # Get first certificate
+                    
+                    # Extract certificate information
+                    subject = cert.subject.rfc4514_string()
+                    valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    
+                    # Extract CN from subject
+                    subject_cn = "Unknown"
+                    for attribute in cert.subject:
+                        if hasattr(attribute.oid, '_name') and attribute.oid._name == 'commonName':
+                            subject_cn = attribute.value
+                            break
+                    
+                    signature_data.update({
+                        'signer': subject_cn,
+                        'valid_from': valid_from,
+                        'valid_until': valid_until,
+                        'algorithm': cert.signature_algorithm_oid._name if hasattr(cert.signature_algorithm_oid, '_name') else 'Unknown'
+                    })
+            except Exception as cert_error:
+                # Fallback to basic certificate analysis
+                pass
+            
+            # Check signature schemes using androguard methods
+            try:
+                signature_data['schemes']['v1 (JAR signing)'] = self.apk_obj.is_signed_v1()
+                signature_data['schemes']['v2 (APK Signature Scheme v2)'] = self.apk_obj.is_signed_v2()
+                signature_data['schemes']['v3 (APK Signature Scheme v3)'] = self.apk_obj.is_signed_v3()
+            except Exception:
+                # If androguard methods fail, use fallback analyzer
+                signature_analyzer = SignatureAnalyzer(self.apk_path)
+                fallback_data = signature_analyzer.analyze()
+                if 'schemes' in fallback_data:
+                    signature_data['schemes'] = fallback_data['schemes']
+            
+            return signature_data
+            
         except Exception as e:
-            return {'error': str(e)}
+            # Complete fallback to signature analyzer
+            try:
+                signature_analyzer = SignatureAnalyzer(self.apk_path)
+                return signature_analyzer.analyze()
+            except:
+                return {'error': str(e)}
     
     def _check_unity_exported(self):
         """Check if Unity main activity has android:exported='true'"""
