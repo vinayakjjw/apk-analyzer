@@ -518,11 +518,13 @@ class APKAnalyzer:
             # Method 1: Use androguard's built-in method
             try:
                 icon_data = self.apk_obj.get_app_icon()
-                if icon_data and len(icon_data) > 0:
+                if icon_data and len(icon_data) > 100:  # Ensure it's a proper image file, not just metadata
                     # Convert string to bytes if needed
                     if isinstance(icon_data, str):
                         icon_data = icon_data.encode('latin-1')
                     return icon_data
+                else:
+                    print(f"Built-in icon too small: {len(icon_data) if icon_data else 0} bytes")
             except Exception as e:
                 print(f"Built-in icon method failed: {e}")
             
@@ -576,17 +578,27 @@ class APKAnalyzer:
             # Method 3: Search for any application icon in common directories
             try:
                 with zipfile.ZipFile(self.apk_path, 'r') as z:
-                    # Search for icon files in common patterns
+                    # First priority: look for larger icon files
+                    icon_candidates = []
+                    
                     for file_path in z.namelist():
                         if (('icon' in file_path.lower() or 'launcher' in file_path.lower()) and 
                             file_path.endswith(('.png', '.jpg', '.jpeg')) and
                             'res/' in file_path):
                             try:
                                 icon_data = z.read(file_path)
-                                if icon_data and len(icon_data) > 0:
-                                    return icon_data
+                                if icon_data and len(icon_data) > 100:  # Only consider files larger than 100 bytes
+                                    icon_candidates.append((file_path, icon_data, len(icon_data)))
+                                    print(f"Found icon candidate: {file_path} ({len(icon_data)} bytes)")
                             except:
                                 continue
+                    
+                    # Sort by file size (largest first) and return the biggest icon
+                    if icon_candidates:
+                        icon_candidates.sort(key=lambda x: x[2], reverse=True)
+                        best_icon = icon_candidates[0]
+                        print(f"Selected best icon: {best_icon[0]} ({best_icon[2]} bytes)")
+                        return best_icon[1]
             except Exception as e:
                 print(f"General icon search failed: {e}")
             
