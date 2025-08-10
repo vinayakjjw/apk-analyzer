@@ -367,6 +367,58 @@ def display_apk_analysis_batch(data, filename, index):
         else:
             st.info("No declared permissions found")
     
+    # Signature Details
+    with st.expander("🔐 Signature Details", expanded=False):
+        signature = safe_get(data, 'signature', {})
+        
+        if signature:
+            st.subheader("SIGNATURE")
+            
+            # Basic signature information in a clean format
+            signer_info = safe_get(signature, 'signer', 'Unknown')
+            st.write(f"**Signer:** {signer_info}")
+            st.write(f"**Valid from:** {safe_get(signature, 'valid_from', 'Unknown')}")
+            st.write(f"**Valid until:** {safe_get(signature, 'valid_until', 'Unknown')}")
+            st.write(f"**Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
+            
+            st.write("---")
+            st.subheader("Certificate Fingerprints")
+            
+            # Display certificate fingerprints in a more readable format
+            sha256_digest = safe_get(signature, 'sha256_digest', 'Unknown')
+            sha1_digest = safe_get(signature, 'sha1_digest', 'Unknown')
+            md5_digest = safe_get(signature, 'md5_digest', 'Unknown')
+            
+            if sha256_digest != 'Unknown':
+                st.write("**SHA-256:**")
+                st.code(sha256_digest, language=None)
+            else:
+                st.write(f"**SHA-256:** {sha256_digest}")
+                
+            if sha1_digest != 'Unknown':
+                st.write("**SHA-1:**")
+                st.code(sha1_digest, language=None)
+            else:
+                st.write(f"**SHA-1:** {sha1_digest}")
+                
+            if md5_digest != 'Unknown':
+                st.write("**MD5:**")
+                st.code(md5_digest, language=None)
+            else:
+                st.write(f"**MD5:** {md5_digest}")
+            
+            st.write("---")
+            st.subheader("Verification Schemes")
+            
+            # Display verification schemes in a cleaner format
+            schemes = signature.get('schemes', {})
+            for scheme_name, status in schemes.items():
+                status_icon = "✅" if status else "❌"
+                status_text = "Verified" if status else "Not verified"
+                st.write(f"{status_icon} **{scheme_name}:** {status_text}")
+        else:
+            st.warning("No signature information found")
+    
     # Android Manifest
     with st.expander("📄 Android Manifest XML", expanded=False):
         manifest_xml = safe_get(data, 'manifest_xml', None)
