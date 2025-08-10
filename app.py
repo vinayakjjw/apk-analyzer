@@ -142,8 +142,13 @@ def display_apk_analysis(data, filename):
                 from io import BytesIO
                 col_icon, col_info = st.columns([1, 4])
                 with col_icon:
-                    # Convert bytes to BytesIO for Streamlit
-                    if isinstance(app_icon, bytes):
+                    # Convert to bytes if needed, then to BytesIO for Streamlit
+                    if isinstance(app_icon, str):
+                        # Convert string to bytes using latin-1 encoding
+                        icon_bytes = app_icon.encode('latin-1')
+                        icon_stream = BytesIO(icon_bytes)
+                        st.image(icon_stream, width=100, caption="App Icon")
+                    elif isinstance(app_icon, bytes):
                         icon_stream = BytesIO(app_icon)
                         st.image(icon_stream, width=100, caption="App Icon")
                     else:
@@ -424,10 +429,17 @@ def display_apk_detailed_summary(data):
     if app_icon:
         try:
             from io import BytesIO
-            icon_bytes = BytesIO(app_icon)
-            st.image(icon_bytes, width=80)
-        except:
-            st.info("📱 Icon available")
+            # Handle both string and bytes data types
+            if isinstance(app_icon, str):
+                icon_bytes = app_icon.encode('latin-1')
+                icon_stream = BytesIO(icon_bytes)
+            elif isinstance(app_icon, bytes):
+                icon_stream = BytesIO(app_icon)
+            else:
+                icon_stream = app_icon
+            st.image(icon_stream, width=80)
+        except Exception as e:
+            st.info(f"📱 Icon available ({type(app_icon).__name__})")
     else:
         st.info("📱 No icon")
     

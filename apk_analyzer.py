@@ -519,6 +519,9 @@ class APKAnalyzer:
             try:
                 icon_data = self.apk_obj.get_app_icon()
                 if icon_data and len(icon_data) > 0:
+                    # Convert string to bytes if needed
+                    if isinstance(icon_data, str):
+                        icon_data = icon_data.encode('latin-1')
                     return icon_data
             except Exception as e:
                 print(f"Built-in icon method failed: {e}")
