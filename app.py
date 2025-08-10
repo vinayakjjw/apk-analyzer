@@ -197,6 +197,13 @@ def display_apk_analysis(data, filename):
     with st.expander("⚡ Features", expanded=False):
         features = safe_get(data, 'features', {})
         
+        # OpenGL Version
+        opengl_version = features.get('opengl_version')
+        if opengl_version:
+            st.subheader("Graphics Requirements")
+            st.write(f"**{opengl_version}**")
+            st.write("")
+        
         st.subheader("Required Features")
         required = features.get('required', [])
         if required:
@@ -245,7 +252,7 @@ def display_apk_analysis(data, filename):
         unity_exported = safe_get(data, 'unity_exported', None)
         if unity_exported is not None:
             if unity_exported:
-                st.error("⚠️ Unity main activity has android:exported='true' - potential security risk!")
+                st.info("ℹ️ Unity main activity has android:exported='true'")
             else:
                 st.success("✅ Unity main activity does not have android:exported='true'")
         else:

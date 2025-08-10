@@ -212,6 +212,7 @@ class APKAnalyzer:
             required = []
             implied = []
             not_required = []
+            opengl_version = None
             
             manifest = self.apk_obj.get_android_manifest_xml()
             
@@ -219,12 +220,24 @@ class APKAnalyzer:
                 if elem.tag == 'uses-feature':
                     name = elem.get('{http://schemas.android.com/apk/res/android}name')
                     required_attr = elem.get('{http://schemas.android.com/apk/res/android}required')
+                    gl_es_version = elem.get('{http://schemas.android.com/apk/res/android}glEsVersion')
                     
                     if name:
                         if required_attr == 'false':
                             not_required.append(name)
                         else:
                             required.append(name)
+                    
+                    # Extract OpenGL ES version
+                    if gl_es_version:
+                        try:
+                            # Convert hex version to readable format
+                            version_int = int(gl_es_version, 16) if gl_es_version.startswith('0x') else int(gl_es_version)
+                            major = (version_int >> 16) & 0xFFFF
+                            minor = version_int & 0xFFFF
+                            opengl_version = f"OpenGL ES {major}.{minor}"
+                        except:
+                            opengl_version = f"OpenGL ES (version: {gl_es_version})"
             
             # Get implied features based on permissions
             implied = self._get_implied_features()
@@ -232,10 +245,11 @@ class APKAnalyzer:
             return {
                 'required': required,
                 'implied': implied,
-                'not_required': not_required
+                'not_required': not_required,
+                'opengl_version': opengl_version
             }
         except:
-            return {'required': [], 'implied': [], 'not_required': []}
+            return {'required': [], 'implied': [], 'not_required': [], 'opengl_version': None}
     
     def _get_implied_features(self):
         """Get features that are implied by permissions"""
@@ -283,10 +297,27 @@ class APKAnalyzer:
                 }
             }
             
-            # Use androguard's certificate methods
+            # Use androguard's certificate methods with proper error handling
             try:
-                # Try different certificate extraction methods
-                cert_der = self.apk_obj.get_certificate_der(0)
+                # Try to get certificates using different methods
+                cert_der = None
+                try:
+                    cert_der = self.apk_obj.get_certificate_der(0)
+                except:
+                    try:
+                        # Alternative method
+                        certs_der = self.apk_obj.get_certificates_der_v2()
+                        if certs_der:
+                            cert_der = certs_der[0]
+                    except:
+                        try:
+                            # V1 method
+                            certs_v1 = self.apk_obj.get_certificates_v1()
+                            if certs_v1:
+                                cert_der = certs_v1[0]
+                        except:
+                            pass
+
                 if cert_der:
                     from cryptography import x509
                     cert = x509.load_der_x509_certificate(cert_der)
@@ -298,22 +329,33 @@ class APKAnalyzer:
                     
                     # Extract CN from subject
                     subject_cn = "Unknown"
-                    for attribute in cert.subject:
-                        if attribute.oid._name == 'commonName':
-                            subject_cn = attribute.value
-                            break
+                    try:
+                        for attribute in cert.subject:
+                            if attribute.oid._name == 'commonName':
+                                subject_cn = attribute.value
+                                break
+                    except:
+                        # Try alternative extraction
+                        subject_parts = subject.split(',')
+                        for part in subject_parts:
+                            if 'CN=' in part:
+                                subject_cn = part.split('CN=')[1].strip()
+                                break
                     
                     # Get algorithm name
-                    algo_name = cert.signature_algorithm_oid._name
-                    if 'sha256' in algo_name.lower():
-                        if 'rsa' in algo_name.lower():
-                            algorithm = 'RSA with SHA-256'
-                        elif 'ecdsa' in algo_name.lower():
-                            algorithm = 'ECDSA with SHA-256'
+                    try:
+                        algo_name = cert.signature_algorithm_oid._name
+                        if 'sha256' in algo_name.lower():
+                            if 'rsa' in algo_name.lower():
+                                algorithm = 'RSA with SHA-256'
+                            elif 'ecdsa' in algo_name.lower():
+                                algorithm = 'ECDSA with SHA-256'
+                            else:
+                                algorithm = algo_name
                         else:
                             algorithm = algo_name
-                    else:
-                        algorithm = algo_name
+                    except:
+                        algorithm = "Unknown"
                     
                     signature_data.update({
                         'signer': subject_cn,
@@ -322,33 +364,17 @@ class APKAnalyzer:
                         'algorithm': algorithm,
                         'subject': subject
                     })
-                else:
-                    # Try alternative method
-                    certs = self.apk_obj.get_certificates()
-                    if certs:
-                        cert = certs[0]
-                        subject = cert.subject.rfc4514_string()
-                        valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
-                        valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
-                        
-                        subject_cn = "Unknown"
-                        for attribute in cert.subject:
-                            if attribute.oid._name == 'commonName':
-                                subject_cn = attribute.value
-                                break
-                        
-                        signature_data.update({
-                            'signer': subject_cn,
-                            'valid_from': valid_from,
-                            'valid_until': valid_until,
-                            'algorithm': cert.signature_algorithm_oid._name,
-                            'subject': subject
-                        })
                         
             except Exception as cert_error:
-                # Fallback to basic certificate analysis
+                # Log error for debugging but continue
                 print(f"Certificate parsing error: {cert_error}")
-                pass
+                # Try to get basic signature info without certificate details
+                try:
+                    sig_names = self.apk_obj.get_signature_names()
+                    if sig_names:
+                        signature_data['signer'] = f"Certificate: {sig_names[0]}"
+                except:
+                    pass
             
             # Check signature schemes using androguard methods
             try:
@@ -482,15 +508,50 @@ class APKAnalyzer:
     def _get_app_icon(self):
         """Extract app icon"""
         try:
-            icon_data = self.apk_obj.get_app_icon()
-            if icon_data:
-                import tempfile
-                import base64
-                from io import BytesIO
+            # Method 1: Use androguard's built-in method
+            try:
+                icon_data = self.apk_obj.get_app_icon()
+                if icon_data:
+                    return icon_data
+            except:
+                pass
+            
+            # Method 2: Manual extraction from common icon locations
+            try:
+                with zipfile.ZipFile(self.apk_path, 'r') as z:
+                    # Common icon paths in order of preference (highest density first)
+                    icon_paths = [
+                        'res/mipmap-xxxhdpi/ic_launcher.png',
+                        'res/mipmap-xxhdpi/ic_launcher.png', 
+                        'res/mipmap-xhdpi/ic_launcher.png',
+                        'res/mipmap-hdpi/ic_launcher.png',
+                        'res/mipmap-mdpi/ic_launcher.png',
+                        'res/mipmap-ldpi/ic_launcher.png',
+                        'res/drawable-xxxhdpi/ic_launcher.png',
+                        'res/drawable-xxhdpi/ic_launcher.png',
+                        'res/drawable-xhdpi/ic_launcher.png',
+                        'res/drawable-hdpi/ic_launcher.png',
+                        'res/drawable-mdpi/ic_launcher.png',
+                        'res/drawable-ldpi/ic_launcher.png'
+                    ]
+                    
+                    # Try each common path
+                    for icon_path in icon_paths:
+                        if icon_path in z.namelist():
+                            return z.read(icon_path)
+                    
+                    # Search for any launcher icon file
+                    for file in z.namelist():
+                        if ('ic_launcher' in file or 'launcher' in file) and file.endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                            return z.read(file)
+                    
+                    # Fallback: search for any icon file
+                    for file in z.namelist():
+                        if 'icon' in file.lower() and file.endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                            return z.read(file)
+            except:
+                pass
                 
-                # Convert icon data to base64 for display
-                icon_bytes = BytesIO(icon_data)
-                return icon_bytes.getvalue()
             return None
         except:
             return None
