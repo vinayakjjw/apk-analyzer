@@ -107,7 +107,7 @@ class APKComparator:
         return differences
     
     def _compare_signatures(self):
-        """Compare signature information"""
+        """Compare signature information including certificate fingerprints"""
         sig1 = self.apk1.get('signature', {})
         sig2 = self.apk2.get('signature', {})
         
@@ -126,6 +126,27 @@ class APKComparator:
         algo2 = sig2.get('algorithm', 'Unknown')
         if algo1 != algo2:
             differences.append(f"Algorithm: APK1='{algo1}' vs APK2='{algo2}'")
+            match = False
+        
+        # Compare SHA-256 digest (most important for security)
+        sha256_1 = sig1.get('sha256_digest', 'Unknown')
+        sha256_2 = sig2.get('sha256_digest', 'Unknown')
+        if sha256_1 != sha256_2:
+            differences.append(f"SHA-256 Digest: APK1='{sha256_1}' vs APK2='{sha256_2}'")
+            match = False
+        
+        # Compare SHA-1 digest
+        sha1_1 = sig1.get('sha1_digest', 'Unknown')
+        sha1_2 = sig2.get('sha1_digest', 'Unknown')
+        if sha1_1 != sha1_2:
+            differences.append(f"SHA-1 Digest: APK1='{sha1_1}' vs APK2='{sha1_2}'")
+            match = False
+        
+        # Compare MD5 digest
+        md5_1 = sig1.get('md5_digest', 'Unknown')
+        md5_2 = sig2.get('md5_digest', 'Unknown')
+        if md5_1 != md5_2:
+            differences.append(f"MD5 Digest: APK1='{md5_1}' vs APK2='{md5_2}'")
             match = False
         
         # Compare signature schemes

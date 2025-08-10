@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec
 from cryptography.exceptions import InvalidSignature
 import datetime
+import hashlib
 
 class SignatureAnalyzer:
     def __init__(self, apk_path):
@@ -18,6 +19,9 @@ class SignatureAnalyzer:
                 'valid_from': 'Unknown',
                 'valid_until': 'Unknown',
                 'algorithm': 'Unknown',
+                'sha256_digest': 'Unknown',
+                'sha1_digest': 'Unknown',
+                'md5_digest': 'Unknown',
                 'schemes': {
                     'v1 (JAR signing)': False,
                     'v2 (APK Signature Scheme v2)': False,
@@ -109,13 +113,27 @@ class SignatureAnalyzer:
                                 subject_cn = attribute.value
                                 break
                         
+                        # Calculate certificate fingerprints
+                        cert_der = cert.public_bytes(serialization.Encoding.DER)
+                        sha256_digest = hashlib.sha256(cert_der).hexdigest()
+                        sha1_digest = hashlib.sha1(cert_der).hexdigest()
+                        md5_digest = hashlib.md5(cert_der).hexdigest()
+                        
+                        # Format fingerprints with colons for readability
+                        sha256_formatted = ':'.join(sha256_digest[i:i+2] for i in range(0, len(sha256_digest), 2)).upper()
+                        sha1_formatted = ':'.join(sha1_digest[i:i+2] for i in range(0, len(sha1_digest), 2)).upper()
+                        md5_formatted = ':'.join(md5_digest[i:i+2] for i in range(0, len(md5_digest), 2)).upper()
+                        
                         return {
                             'signer': subject_cn,
                             'valid_from': valid_from,
                             'valid_until': valid_until,
                             'algorithm': algorithm,
                             'subject': subject,
-                            'issuer': issuer
+                            'issuer': issuer,
+                            'sha256_digest': sha256_formatted,
+                            'sha1_digest': sha1_formatted,
+                            'md5_digest': md5_formatted
                         }
                 except Exception:
                     # If PKCS#7 parsing fails, try alternative parsing

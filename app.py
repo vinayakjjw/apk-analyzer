@@ -39,9 +39,12 @@ def check_security_concerns(data):
     if signature:
         valid_from = safe_get(signature, 'valid_from', '')
         signer = safe_get(signature, 'signer', '')
+        sha256_digest = safe_get(signature, 'sha256_digest', '')
         
         expected_date = '2020-12-10 13:55:47 UTC'
         expected_signer = 'Avik Bhowmik'
+        # Optional: Add expected SHA-256 fingerprint for stricter verification
+        # expected_sha256 = 'AA:BB:CC:DD:...'  # Add specific fingerprint if needed
         
         signature_issues = []
         if expected_date not in valid_from:
@@ -49,6 +52,10 @@ def check_security_concerns(data):
         
         if expected_signer not in signer:
             signature_issues.append(f"signer mismatch (found: {signer})")
+        
+        # Optional SHA-256 verification (uncomment if specific fingerprint is required)
+        # if expected_sha256 and sha256_digest != expected_sha256:
+        #     signature_issues.append(f"SHA-256 mismatch (found: {sha256_digest})")
         
         if signature_issues:
             concerns.append(f"⚠️ **Signature Issue**: {', '.join(signature_issues)}")
@@ -597,6 +604,9 @@ def display_apk_analysis(data, filename):
                 st.write("**Valid from**")
                 st.write("**Valid until**") 
                 st.write("**Algorithm**")
+                st.write("**SHA-256 Digest**")
+                st.write("**SHA-1 Digest**")
+                st.write("**MD5 Digest**")
                 st.write("")
                 
                 # Verification schemes
@@ -625,6 +635,27 @@ def display_apk_analysis(data, filename):
                 st.write(safe_get(signature, 'valid_from', 'Unknown'))
                 st.write(safe_get(signature, 'valid_until', 'Unknown'))
                 st.write(safe_get(signature, 'algorithm', 'Unknown'))
+                
+                # Display certificate fingerprints
+                sha256_digest = safe_get(signature, 'sha256_digest', 'Unknown')
+                sha1_digest = safe_get(signature, 'sha1_digest', 'Unknown')
+                md5_digest = safe_get(signature, 'md5_digest', 'Unknown')
+                
+                if sha256_digest != 'Unknown':
+                    st.code(sha256_digest, language=None)
+                else:
+                    st.write(sha256_digest)
+                    
+                if sha1_digest != 'Unknown':
+                    st.code(sha1_digest, language=None)
+                else:
+                    st.write(sha1_digest)
+                    
+                if md5_digest != 'Unknown':
+                    st.code(md5_digest, language=None)
+                else:
+                    st.write(md5_digest)
+                
                 st.write("")
                 
                 # Verification status with proper formatting
