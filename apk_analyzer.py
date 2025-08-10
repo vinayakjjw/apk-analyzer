@@ -35,7 +35,9 @@ class APKAnalyzer:
                 'activities': self._get_activities(),
                 'services': self._get_services(),
                 'receivers': self._get_receivers(),
-                'providers': self._get_providers()
+                'providers': self._get_providers(),
+                'app_icon': self._get_app_icon(),
+                'manifest_xml': self._get_manifest_xml()
             }
             
             return analysis_data
@@ -377,3 +379,41 @@ class APKAnalyzer:
             return providers
         except:
             return []
+    
+    def _get_app_icon(self):
+        """Extract app icon"""
+        try:
+            icon_data = self.apk_obj.get_app_icon()
+            if icon_data:
+                import tempfile
+                import base64
+                from io import BytesIO
+                
+                # Convert icon data to base64 for display
+                icon_bytes = BytesIO(icon_data)
+                return icon_bytes.getvalue()
+            return None
+        except:
+            return None
+    
+    def _get_manifest_xml(self):
+        """Get formatted Android Manifest XML"""
+        try:
+            # Get the raw manifest XML
+            manifest = self.apk_obj.get_android_manifest_xml()
+            if manifest is not None:
+                # Convert the XML tree to string
+                import xml.etree.ElementTree as ET
+                return ET.tostring(manifest.getroot(), encoding='unicode', method='xml')
+            return None
+        except Exception as e:
+            try:
+                # Fallback: try to get manifest as string directly
+                with zipfile.ZipFile(self.apk_path, 'r') as z:
+                    if 'AndroidManifest.xml' in z.namelist():
+                        manifest_data = z.read('AndroidManifest.xml')
+                        # This will be binary AXML format, we'll need to parse it
+                        return "Raw AndroidManifest.xml (Binary AXML format - needs parsing)"
+                return None
+            except:
+                return None

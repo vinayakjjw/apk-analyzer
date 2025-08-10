@@ -133,111 +133,110 @@ def dual_apk_comparison():
 def display_apk_analysis(data, filename):
     st.success(f"✅ Successfully analyzed: {filename}")
     
-    # App Overview
+    # App Overview with Icon
     with st.expander("📱 App Overview", expanded=True):
-        col1, col2, col3 = st.columns(3)
+        # Display app icon if available
+        app_icon = safe_get(data, 'app_icon', None)
+        if app_icon:
+            try:
+                col_icon, col_info = st.columns([1, 4])
+                with col_icon:
+                    st.image(app_icon, width=100, caption="App Icon")
+                with col_info:
+                    st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+                    st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+                    st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+                    st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+            except:
+                # If icon display fails, just show info without icon
+                st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+                st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+                st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+                st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
+        else:
+            st.write(f"**App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+            st.write(f"**Package:** {safe_get(data, 'package_name', 'Unknown')}")
+            st.write(f"**Version:** {safe_get(data, 'version_name', 'Unknown')}")
+            st.write(f"**Build:** {safe_get(data, 'version_code', 'Unknown')}")
         
-        with col1:
-            st.metric("App Name", safe_get(data, 'app_name', 'Unknown'))
-            st.metric("Package", safe_get(data, 'package_name', 'Unknown'))
-            st.metric("Version", safe_get(data, 'version_name', 'Unknown'))
-        
-        with col2:
-            st.metric("Build", safe_get(data, 'version_code', 'Unknown'))
-            st.metric("Min OS", f"API {safe_get(data, 'min_sdk_version', 'Unknown')}")
-            st.metric("Target OS", f"API {safe_get(data, 'target_sdk_version', 'Unknown')}")
-        
-        with col3:
-            st.metric("Size", format_size(safe_get(data, 'file_size', 0)))
-            st.metric("Architecture", safe_get(data, 'architectures', 'Unknown'))
-            st.metric("Debuggable", "Yes" if safe_get(data, 'debuggable', False) else "No")
+        st.write(f"**Min OS:** API {safe_get(data, 'min_sdk_version', 'Unknown')}")
+        st.write(f"**Target OS:** API {safe_get(data, 'target_sdk_version', 'Unknown')}")
+        st.write(f"**Size:** {format_size(safe_get(data, 'file_size', 0))}")
+        st.write(f"**Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
+        st.write(f"**Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
     
     # Permissions
     with st.expander("🔒 Permissions", expanded=False):
         permissions = safe_get(data, 'permissions', {})
         
-        col1, col2, col3 = st.columns(3)
+        st.subheader("Declared Permissions")
+        declared = permissions.get('declared', [])
+        if declared:
+            for perm in declared:
+                st.write(f"• {perm}")
+        else:
+            st.info("No declared permissions found")
         
-        with col1:
-            st.subheader("Declared Permissions")
-            declared = permissions.get('declared', [])
-            if declared:
-                for perm in declared:
-                    st.write(f"• {perm}")
-            else:
-                st.info("No declared permissions found")
+        st.subheader("Implied Permissions")
+        implied = permissions.get('implied', [])
+        if implied:
+            for perm in implied:
+                st.write(f"• {perm}")
+        else:
+            st.info("No implied permissions found")
         
-        with col2:
-            st.subheader("Implied Permissions")
-            implied = permissions.get('implied', [])
-            if implied:
-                for perm in implied:
-                    st.write(f"• {perm}")
-            else:
-                st.info("No implied permissions found")
-        
-        with col3:
-            st.subheader("Optional Permissions")
-            optional = permissions.get('optional', [])
-            if optional:
-                for perm in optional:
-                    st.write(f"• {perm}")
-            else:
-                st.info("No optional permissions found")
+        st.subheader("Optional Permissions")
+        optional = permissions.get('optional', [])
+        if optional:
+            for perm in optional:
+                st.write(f"• {perm}")
+        else:
+            st.info("No optional permissions found")
     
     # Features
     with st.expander("⚡ Features", expanded=False):
         features = safe_get(data, 'features', {})
         
-        col1, col2, col3 = st.columns(3)
+        st.subheader("Required Features")
+        required = features.get('required', [])
+        if required:
+            for feat in required:
+                st.write(f"• {feat}")
+        else:
+            st.info("No required features found")
         
-        with col1:
-            st.subheader("Required Features")
-            required = features.get('required', [])
-            if required:
-                for feat in required:
-                    st.write(f"• {feat}")
-            else:
-                st.info("No required features found")
+        st.subheader("Implied Features")
+        implied = features.get('implied', [])
+        if implied:
+            for feat in implied:
+                st.write(f"• {feat}")
+        else:
+            st.info("No implied features found")
         
-        with col2:
-            st.subheader("Implied Features")
-            implied = features.get('implied', [])
-            if implied:
-                for feat in implied:
-                    st.write(f"• {feat}")
-            else:
-                st.info("No implied features found")
-        
-        with col3:
-            st.subheader("Not Required Features")
-            not_required = features.get('not_required', [])
-            if not_required:
-                for feat in not_required:
-                    st.write(f"• {feat}")
-            else:
-                st.info("No not-required features found")
+        st.subheader("Not Required Features")
+        not_required = features.get('not_required', [])
+        if not_required:
+            for feat in not_required:
+                st.write(f"• {feat}")
+        else:
+            st.info("No not-required features found")
     
     # Signature Details
     with st.expander("🔐 Signature Details", expanded=False):
         signature = safe_get(data, 'signature', {})
         
         if signature:
-            col1, col2 = st.columns(2)
+            st.subheader("Certificate Information")
+            st.write(f"**Signer:** {safe_get(signature, 'signer', 'Unknown')}")
+            st.write(f"**Valid From:** {safe_get(signature, 'valid_from', 'Unknown')}")
+            st.write(f"**Valid Until:** {safe_get(signature, 'valid_until', 'Unknown')}")
+            st.write(f"**Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
             
-            with col1:
-                st.subheader("Certificate Information")
-                st.write(f"**Signer:** {safe_get(signature, 'signer', 'Unknown')}")
-                st.write(f"**Valid From:** {safe_get(signature, 'valid_from', 'Unknown')}")
-                st.write(f"**Valid Until:** {safe_get(signature, 'valid_until', 'Unknown')}")
-                st.write(f"**Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
-            
-            with col2:
-                st.subheader("Verification Status")
-                schemes = signature.get('schemes', {})
-                for scheme, status in schemes.items():
-                    status_icon = "✅" if status else "❌"
-                    st.write(f"{status_icon} {scheme}")
+            st.subheader("Verification Status")
+            schemes = signature.get('schemes', {})
+            for scheme, status in schemes.items():
+                status_icon = "✅" if status else "❌"
+                st.write(f"{status_icon} {scheme}")
         else:
             st.warning("No signature information found")
     
@@ -254,25 +253,29 @@ def display_apk_analysis(data, filename):
     
     # Additional Details
     with st.expander("📋 Additional Details", expanded=False):
-        col1, col2 = st.columns(2)
+        st.subheader("Screen Support")
+        screens = safe_get(data, 'supported_screens', [])
+        if screens:
+            for screen in screens:
+                st.write(f"• {screen}")
+        else:
+            st.info("Screen support information not available")
         
-        with col1:
-            st.subheader("Screen Support")
-            screens = safe_get(data, 'supported_screens', [])
-            if screens:
-                for screen in screens:
-                    st.write(f"• {screen}")
-            else:
-                st.info("Screen support information not available")
-        
-        with col2:
-            st.subheader("Density Support")
-            densities = safe_get(data, 'supported_densities', [])
-            if densities:
-                for density in densities:
-                    st.write(f"• {density}")
-            else:
-                st.info("Density support information not available")
+        st.subheader("Density Support")
+        densities = safe_get(data, 'supported_densities', [])
+        if densities:
+            for density in densities:
+                st.write(f"• {density}")
+        else:
+            st.info("Density support information not available")
+    
+    # Android Manifest
+    with st.expander("📄 Android Manifest XML", expanded=False):
+        manifest_xml = safe_get(data, 'manifest_xml', None)
+        if manifest_xml:
+            st.code(manifest_xml, language='xml')
+        else:
+            st.warning("Android Manifest XML not available")
 
 def display_apk_comparison(data1, data2, comparison, filename1, filename2):
     st.success(f"✅ Successfully compared: {filename1} vs {filename2}")
