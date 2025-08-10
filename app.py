@@ -121,67 +121,49 @@ def batch_apk_analysis():
     st.header("Batch APK Analysis")
     st.markdown("Upload multiple APK files to analyze them in batch and get a comprehensive overview")
     
-    # Configure to show all files on one page
-    st.markdown("""
-    <style>
-    /* Remove pagination and show all uploaded files */
-    div[data-testid="stFileUploader"] {
-        --uploaded-file-list-max-height: none !important;
-    }
-    div[data-testid="stFileUploader"] > div > div > div {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-    div[data-testid="stFileUploader"] .uploadedFiles {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-    div[data-testid="stFileUploader"] .uploadedFile {
-        display: block !important;
-    }
-    /* Hide pagination controls */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        display: none !important;
-    }
-    div[data-testid="stFileUploader"] .stSpinner {
-        display: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Use session state to manage file uploads and avoid pagination issues
+    if 'batch_files' not in st.session_state:
+        st.session_state.batch_files = []
     
-    # Use a container to better control the file uploader
-    with st.container():
-        uploaded_files = st.file_uploader(
-            "Upload APK files",
-            type=['apk'],
-            accept_multiple_files=True,
-            help="Select multiple Android APK files for batch analysis"
-        )
-        
-        # Additional CSS to ensure no pagination
-        if uploaded_files:
-            st.markdown("""
-            <style>
-            /* Force display all files without pagination */
-            section[data-testid="stFileUploader"] div[data-testid="stFileUploaderDropzone"] + div {
-                max-height: none !important;
-            }
-            section[data-testid="stFileUploader"] [data-testid="stFileUploaderFileList"] {
-                max-height: none !important;
-                overflow-y: visible !important;
-            }
-            /* Hide page navigation if it exists */
-            section[data-testid="stFileUploader"] button[aria-label*="page"] {
-                display: none !important;
-            }
-            section[data-testid="stFileUploader"] span:contains("Showing page") {
-                display: none !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+    # File uploader with session state management
+    uploaded_files = st.file_uploader(
+        "Upload APK files",
+        type=['apk'],
+        accept_multiple_files=True,
+        help="Select multiple Android APK files for batch analysis",
+        key="batch_uploader"
+    )
     
+    # Update session state if new files are uploaded
     if uploaded_files:
-        st.info(f"📁 {len(uploaded_files)} APK files uploaded")
+        st.session_state.batch_files = uploaded_files
+    
+    # Display all uploaded files in a custom list to avoid pagination
+    if st.session_state.batch_files:
+        st.markdown("### 📁 Uploaded Files")
+        
+        # Custom file list display
+        for i, file in enumerate(st.session_state.batch_files):
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                st.write(f"📄 {file.name}")
+            with col2:
+                st.write(f"{file.size / (1024*1024):.1f} MB")
+            with col3:
+                if st.button("❌", key=f"remove_{i}", help="Remove file"):
+                    # Remove file from list
+                    st.session_state.batch_files = [f for j, f in enumerate(st.session_state.batch_files) if j != i]
+                    st.rerun()
+        
+        # Clear all files button
+        if st.button("🗑️ Clear All Files"):
+            st.session_state.batch_files = []
+            st.rerun()
+        
+        # Use the files from session state for analysis
+        files_to_analyze = st.session_state.batch_files
+        
+        st.info(f"📁 {len(files_to_analyze)} APK files ready for analysis")
         
         # Analysis options
         col1, col2 = st.columns(2)
@@ -191,7 +173,7 @@ def batch_apk_analysis():
             export_csv = st.checkbox("Enable CSV export", value=True)
         
         if st.button("🚀 Analyze All APKs", type="primary"):
-            analyze_batch_apks(uploaded_files, show_details, export_csv)
+            analyze_batch_apks(files_to_analyze, show_details, export_csv)
 
 def analyze_batch_apks(uploaded_files, show_details, export_csv):
     """Analyze multiple APK files in batch"""
