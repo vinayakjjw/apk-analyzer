@@ -43,8 +43,7 @@ def check_security_concerns(data):
         
         expected_date = '2020-12-10 13:55:47 UTC'
         expected_signer = 'Avik Bhowmik'
-        # Optional: Add expected SHA-256 fingerprint for stricter verification
-        # expected_sha256 = 'AA:BB:CC:DD:...'  # Add specific fingerprint if needed
+        expected_sha256 = '9C:EC:B0:0D:53:B2:FA:05:0A:9E:91:96:3D:4F:A1:5F:53:9C:D9:8F:F1:B5:FF:E4:17:60:01:FD:7E:60:A0:7A'
         
         signature_issues = []
         if expected_date not in valid_from:
@@ -53,9 +52,9 @@ def check_security_concerns(data):
         if expected_signer not in signer:
             signature_issues.append(f"signer mismatch (found: {signer})")
         
-        # Optional SHA-256 verification (uncomment if specific fingerprint is required)
-        # if expected_sha256 and sha256_digest != expected_sha256:
-        #     signature_issues.append(f"SHA-256 mismatch (found: {sha256_digest})")
+        # SHA-256 fingerprint verification
+        if sha256_digest != 'Unknown' and sha256_digest != expected_sha256:
+            signature_issues.append(f"SHA-256 mismatch (expected: {expected_sha256}, found: {sha256_digest})")
         
         if signature_issues:
             concerns.append(f"⚠️ **Signature Issue**: {', '.join(signature_issues)}")
