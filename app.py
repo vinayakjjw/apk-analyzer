@@ -798,7 +798,7 @@ def display_apk_detailed_summary(data):
     else:
         st.info("📱 No icon")
     
-    st.write("**Basic Information**")
+    st.markdown("**Basic Information**")
     st.write(f"• **App Name:** {safe_get(data, 'app_name', 'Unknown')}")
     st.write(f"• **Package:** {safe_get(data, 'package_name', 'Unknown')}")
     st.write(f"• **Version:** {safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})")
@@ -814,8 +814,8 @@ def display_apk_detailed_summary(data):
     if opengl_version:
         st.write(f"• **Graphics:** {opengl_version}")
     
-    st.write("")
-    st.write("**Permissions** (showing first 8)")
+    
+    st.markdown("**Permissions** (showing first 8)")
     permissions = safe_get(data, 'permissions', {})
     declared = permissions.get('declared', [])
     if declared:
@@ -826,55 +826,6 @@ def display_apk_detailed_summary(data):
             st.write(f"• ... and {len(declared) - 8} more")
     else:
         st.write("• No permissions declared")
-    
-    st.write("")
-    st.write("**Features** (showing first 5)")
-    required = features.get('required', [])
-    if required:
-        for feat in required[:5]:  # Show first 5
-            clean_feat = feat.replace('android.hardware.', '').replace('android.software.', '')
-            st.write(f"• {clean_feat}")
-        if len(required) > 5:
-            st.write(f"• ... and {len(required) - 5} more")
-    else:
-        st.write("• No features required")
-    
-    st.write("")
-    st.write("**Signature Information**")
-    signature = safe_get(data, 'signature', {})
-    if signature:
-        signer = safe_get(signature, 'signer', 'Unknown')
-        # Extract just the CN if it's a full subject
-        if 'CN=' in signer:
-            cn_part = [part for part in signer.split(',') if 'CN=' in part]
-            if cn_part:
-                signer = cn_part[0].replace('CN=', '').strip()
-        
-        st.write(f"• **Signer:** {signer}")
-        st.write(f"• **Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
-        st.write(f"• **Valid From:** {safe_get(signature, 'valid_from', 'Unknown')}")
-        
-        schemes = signature.get('schemes', {})
-        verified_schemes = []
-        for scheme, status in schemes.items():
-            if status:
-                if 'v1' in scheme.lower():
-                    verified_schemes.append('v1')
-                elif 'v2' in scheme.lower():
-                    verified_schemes.append('v2')
-                elif 'v3.1' in scheme.lower():
-                    verified_schemes.append('v3.1')
-                elif 'v3' in scheme.lower():
-                    verified_schemes.append('v3')
-                elif 'v4' in scheme.lower():
-                    verified_schemes.append('v4')
-        
-        if verified_schemes:
-            st.write(f"• **Verified Schemes:** {', '.join(verified_schemes)}")
-        else:
-            st.write("• **Verified Schemes:** None")
-    else:
-        st.write("• No signature information available")
 
 if __name__ == "__main__":
     main()
