@@ -7,6 +7,54 @@ from apk_analyzer import APKAnalyzer
 from comparison_utils import APKComparator
 from utils import format_size, safe_get
 
+def check_security_concerns(data):
+    """Check for security concerns and return warnings"""
+    concerns = []
+    
+    # Check for dangerous permissions
+    permissions = safe_get(data, 'permissions', {}).get('declared', [])
+    dangerous_perms = []
+    for perm in permissions:
+        if 'INTERNET' in perm.upper():
+            dangerous_perms.append('Internet Access')
+        elif any(x in perm.upper() for x in ['WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE']):
+            dangerous_perms.append('Folder Access')
+    
+    if dangerous_perms:
+        concerns.append(f"⚠️ **Risky Permissions**: {', '.join(dangerous_perms)}")
+    
+    # Check OpenGL version
+    features = safe_get(data, 'features', {})
+    opengl_version = features.get('opengl_version', '')
+    if opengl_version and '2.0' not in opengl_version:
+        concerns.append(f"⚠️ **OpenGL Version**: {opengl_version} (expected 2.0)")
+    
+    # Check Architecture
+    architecture = safe_get(data, 'architectures', '')
+    if architecture and 'armeabi-v7a' not in architecture:
+        concerns.append(f"⚠️ **Architecture**: {architecture} (expected armeabi-v7a)")
+    
+    # Check Signature
+    signature = safe_get(data, 'signature', {})
+    if signature:
+        valid_from = safe_get(signature, 'valid_from', '')
+        signer = safe_get(signature, 'signer', '')
+        
+        expected_date = '2020-12-10 13:55:47 UTC'
+        expected_signer = 'Avik Bhowmik'
+        
+        signature_issues = []
+        if expected_date not in valid_from:
+            signature_issues.append(f"date mismatch (found: {valid_from})")
+        
+        if expected_signer not in signer:
+            signature_issues.append(f"signer mismatch (found: {signer})")
+        
+        if signature_issues:
+            concerns.append(f"⚠️ **Signature Issue**: {', '.join(signature_issues)}")
+    
+    return concerns
+
 # Configure page
 st.set_page_config(
     page_title="APK Analysis Tool",
@@ -29,12 +77,7 @@ def main():
         )
         
         st.markdown("---")
-        st.markdown("### Features")
-        st.markdown("• Extract app metadata")
-        st.markdown("• Analyze permissions & features")
-        st.markdown("• Verify signatures")
-        st.markdown("• Check Unity exported status")
-        st.markdown("• Compare APKs side-by-side")
+        st.markdown("Upload APK files to get detailed analysis including permissions, features, signature verification, and security insights.")
     
     if mode == "Single APK Analysis":
         single_apk_analysis()
@@ -132,6 +175,14 @@ def dual_apk_comparison():
 
 def display_apk_analysis(data, filename):
     st.success(f"✅ Successfully analyzed: {filename}")
+    
+    # Security Concerns Check
+    security_concerns = check_security_concerns(data)
+    if security_concerns:
+        st.error("🚨 **Security Concerns Detected**")
+        for concern in security_concerns:
+            st.warning(concern)
+        st.markdown("---")
     
     # App Overview with Icon
     with st.expander("📱 App Overview", expanded=True):
@@ -423,6 +474,14 @@ def display_apk_summary(data):
 
 def display_apk_detailed_summary(data):
     """Display detailed APK summary for comparison mode"""
+    
+    # Security concerns check for comparison mode
+    security_concerns = check_security_concerns(data)
+    if security_concerns:
+        st.error("🚨 **Security Issues**")
+        for concern in security_concerns:
+            st.warning(concern)
+        st.markdown("---")
     
     # App icon first
     app_icon = safe_get(data, 'app_icon', None)
