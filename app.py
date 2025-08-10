@@ -596,74 +596,48 @@ def display_apk_analysis(data, filename):
         if signature:
             st.subheader("SIGNATURE")
             
-            # Create a table-like display for signature information
-            col1, col2 = st.columns([1, 2])
+            # Basic signature information in a clean format
+            signer_info = safe_get(signature, 'signer', 'Unknown')
+            st.write(f"**Signer:** {signer_info}")
+            st.write(f"**Valid from:** {safe_get(signature, 'valid_from', 'Unknown')}")
+            st.write(f"**Valid until:** {safe_get(signature, 'valid_until', 'Unknown')}")
+            st.write(f"**Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
             
-            with col1:
-                st.write("**Signer**")
-                st.write("**Valid from**")
-                st.write("**Valid until**") 
-                st.write("**Algorithm**")
-                st.write("**SHA-256 Digest**")
-                st.write("**SHA-1 Digest**")
-                st.write("**MD5 Digest**")
-                st.write("")
-                
-                # Verification schemes
-                schemes = signature.get('schemes', {})
-                for scheme_name in schemes.keys():
-                    if 'v1' in scheme_name.lower():
-                        st.write("**Verified scheme v1 (JAR signing)**")
-                    elif 'v2' in scheme_name.lower():
-                        st.write("**Verified scheme v2 (APK Signature Scheme v2)**")
-                    elif 'v3' in scheme_name.lower():
-                        st.write("**Verified scheme v3 (APK Signature Scheme v3)**")
-                    elif 'v3.1' in scheme_name.lower():
-                        st.write("**Verified scheme v3.1 (APK Signature Scheme v3.1)**")
-                    elif 'v4' in scheme_name.lower():
-                        st.write("**Verified scheme v4 (APK Signature Scheme v4)**")
+            st.write("---")
+            st.subheader("Certificate Fingerprints")
             
-            with col2:
-                # Extract detailed signer information
-                signer_info = safe_get(signature, 'signer', 'Unknown')
-                if 'CN=' in signer_info:
-                    # Parse the full certificate subject
-                    st.write(signer_info)
-                else:
-                    st.write(signer_info)
+            # Display certificate fingerprints in a more readable format
+            sha256_digest = safe_get(signature, 'sha256_digest', 'Unknown')
+            sha1_digest = safe_get(signature, 'sha1_digest', 'Unknown')
+            md5_digest = safe_get(signature, 'md5_digest', 'Unknown')
+            
+            if sha256_digest != 'Unknown':
+                st.write("**SHA-256:**")
+                st.code(sha256_digest, language=None)
+            else:
+                st.write(f"**SHA-256:** {sha256_digest}")
                 
-                st.write(safe_get(signature, 'valid_from', 'Unknown'))
-                st.write(safe_get(signature, 'valid_until', 'Unknown'))
-                st.write(safe_get(signature, 'algorithm', 'Unknown'))
+            if sha1_digest != 'Unknown':
+                st.write("**SHA-1:**")
+                st.code(sha1_digest, language=None)
+            else:
+                st.write(f"**SHA-1:** {sha1_digest}")
                 
-                # Display certificate fingerprints
-                sha256_digest = safe_get(signature, 'sha256_digest', 'Unknown')
-                sha1_digest = safe_get(signature, 'sha1_digest', 'Unknown')
-                md5_digest = safe_get(signature, 'md5_digest', 'Unknown')
-                
-                if sha256_digest != 'Unknown':
-                    st.code(sha256_digest, language=None)
-                else:
-                    st.write(sha256_digest)
-                    
-                if sha1_digest != 'Unknown':
-                    st.code(sha1_digest, language=None)
-                else:
-                    st.write(sha1_digest)
-                    
-                if md5_digest != 'Unknown':
-                    st.code(md5_digest, language=None)
-                else:
-                    st.write(md5_digest)
-                
-                st.write("")
-                
-                # Verification status with proper formatting
-                for scheme_name, status in schemes.items():
-                    if status:
-                        st.write("Yes")
-                    else:
-                        st.write("No")
+            if md5_digest != 'Unknown':
+                st.write("**MD5:**")
+                st.code(md5_digest, language=None)
+            else:
+                st.write(f"**MD5:** {md5_digest}")
+            
+            st.write("---")
+            st.subheader("Verification Schemes")
+            
+            # Display verification schemes in a cleaner format
+            schemes = signature.get('schemes', {})
+            for scheme_name, status in schemes.items():
+                status_icon = "✅" if status else "❌"
+                status_text = "Verified" if status else "Not verified"
+                st.write(f"{status_icon} **{scheme_name}:** {status_text}")
         else:
             st.warning("No signature information found")
     
