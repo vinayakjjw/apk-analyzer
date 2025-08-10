@@ -54,10 +54,10 @@ def check_security_concerns(data):
         
         # SHA-256 fingerprint verification
         if sha256_digest != 'Unknown' and sha256_digest != expected_sha256:
-            signature_issues.append(f"SHA-256 mismatch (expected: {expected_sha256}, found: {sha256_digest})")
+            signature_issues.append("SHA-256 mismatch")
         
         if signature_issues:
-            concerns.append(f"⚠️ **Signature Issue**: {', '.join(signature_issues)}")
+            concerns.append(f"⚠️ **Signature Issue**: {' and '.join(signature_issues)}")
     
     return concerns
 
