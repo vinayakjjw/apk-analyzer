@@ -364,7 +364,8 @@ class APKAnalyzer:
                         algorithm = "Unknown"
                     
                     signature_data.update({
-                        'signer': subject_cn,
+                        'signer': subject,  # Use full subject for detailed display
+                        'signer_cn': subject_cn,  # Keep CN for simple display
                         'valid_from': valid_from,
                         'valid_until': valid_until,
                         'algorithm': algorithm,
@@ -587,7 +588,12 @@ class APKAnalyzer:
                             if level and (not elem.tail or not elem.tail.strip()):
                                 elem.tail = i
                     
-                    root = manifest_xml.getroot()
+                    # Handle both cases: root element or tree object
+                    if hasattr(manifest_xml, 'getroot'):
+                        root = manifest_xml.getroot()
+                    else:
+                        root = manifest_xml
+                    
                     indent(root)
                     xml_string = ET.tostring(root, encoding='unicode', method='xml')
                     

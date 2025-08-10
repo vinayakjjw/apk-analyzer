@@ -164,6 +164,12 @@ def display_apk_analysis(data, filename):
         st.write(f"**Size:** {format_size(safe_get(data, 'file_size', 0))}")
         st.write(f"**Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
         st.write(f"**Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
+        
+        # OpenGL Version in overview
+        features = safe_get(data, 'features', {})
+        opengl_version = features.get('opengl_version')
+        if opengl_version:
+            st.write(f"**Graphics:** {opengl_version}")
     
     # Permissions
     with st.expander("🔒 Permissions", expanded=False):
@@ -197,13 +203,6 @@ def display_apk_analysis(data, filename):
     with st.expander("⚡ Features", expanded=False):
         features = safe_get(data, 'features', {})
         
-        # OpenGL Version
-        opengl_version = features.get('opengl_version')
-        if opengl_version:
-            st.subheader("Graphics Requirements")
-            st.write(f"**{opengl_version}**")
-            st.write("")
-        
         st.subheader("Required Features")
         required = features.get('required', [])
         if required:
@@ -233,17 +232,52 @@ def display_apk_analysis(data, filename):
         signature = safe_get(data, 'signature', {})
         
         if signature:
-            st.subheader("Certificate Information")
-            st.write(f"**Signer:** {safe_get(signature, 'signer', 'Unknown')}")
-            st.write(f"**Valid From:** {safe_get(signature, 'valid_from', 'Unknown')}")
-            st.write(f"**Valid Until:** {safe_get(signature, 'valid_until', 'Unknown')}")
-            st.write(f"**Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
+            st.subheader("SIGNATURE")
             
-            st.subheader("Verification Status")
-            schemes = signature.get('schemes', {})
-            for scheme, status in schemes.items():
-                status_icon = "✅" if status else "❌"
-                st.write(f"{status_icon} {scheme}")
+            # Create a table-like display for signature information
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                st.write("**Signer**")
+                st.write("**Valid from**")
+                st.write("**Valid until**") 
+                st.write("**Algorithm**")
+                st.write("")
+                
+                # Verification schemes
+                schemes = signature.get('schemes', {})
+                for scheme_name in schemes.keys():
+                    if 'v1' in scheme_name.lower():
+                        st.write("**Verified scheme v1 (JAR signing)**")
+                    elif 'v2' in scheme_name.lower():
+                        st.write("**Verified scheme v2 (APK Signature Scheme v2)**")
+                    elif 'v3' in scheme_name.lower():
+                        st.write("**Verified scheme v3 (APK Signature Scheme v3)**")
+                    elif 'v3.1' in scheme_name.lower():
+                        st.write("**Verified scheme v3.1 (APK Signature Scheme v3.1)**")
+                    elif 'v4' in scheme_name.lower():
+                        st.write("**Verified scheme v4 (APK Signature Scheme v4)**")
+            
+            with col2:
+                # Extract detailed signer information
+                signer_info = safe_get(signature, 'signer', 'Unknown')
+                if 'CN=' in signer_info:
+                    # Parse the full certificate subject
+                    st.write(signer_info)
+                else:
+                    st.write(signer_info)
+                
+                st.write(safe_get(signature, 'valid_from', 'Unknown'))
+                st.write(safe_get(signature, 'valid_until', 'Unknown'))
+                st.write(safe_get(signature, 'algorithm', 'Unknown'))
+                st.write("")
+                
+                # Verification status with proper formatting
+                for scheme_name, status in schemes.items():
+                    if status:
+                        st.write("Yes")
+                    else:
+                        st.write("No")
         else:
             st.warning("No signature information found")
     
@@ -280,7 +314,8 @@ def display_apk_analysis(data, filename):
     with st.expander("📄 Android Manifest XML", expanded=False):
         manifest_xml = safe_get(data, 'manifest_xml', None)
         if manifest_xml:
-            st.code(manifest_xml, language='xml')
+            # Use a text area with proper height for vertical scrolling
+            st.text_area("AndroidManifest.xml", value=manifest_xml, height=400, label_visibility="collapsed")
         else:
             st.warning("Android Manifest XML not available")
 
@@ -342,66 +377,95 @@ def display_apk_summary(data):
 def display_apk_detailed_summary(data):
     """Display detailed APK summary for comparison mode"""
     
-    # Basic Info
+    # App icon first
+    app_icon = safe_get(data, 'app_icon', None)
+    if app_icon:
+        try:
+            from io import BytesIO
+            icon_bytes = BytesIO(app_icon)
+            st.image(icon_bytes, width=80)
+        except:
+            st.info("📱 Icon available")
+    else:
+        st.info("📱 No icon")
+    
     st.write("**Basic Information**")
-    st.write(f"• App Name: {safe_get(data, 'app_name', 'Unknown')}")
-    st.write(f"• Package: {safe_get(data, 'package_name', 'Unknown')}")
-    st.write(f"• Version: {safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})")
-    st.write(f"• Min SDK: API {safe_get(data, 'min_sdk_version', 'Unknown')}")
-    st.write(f"• Target SDK: API {safe_get(data, 'target_sdk_version', 'Unknown')}")
-    st.write(f"• Size: {format_size(safe_get(data, 'file_size', 0))}")
-    st.write(f"• Architecture: {safe_get(data, 'architectures', 'Unknown')}")
-    st.write(f"• Debuggable: {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
+    st.write(f"• **App Name:** {safe_get(data, 'app_name', 'Unknown')}")
+    st.write(f"• **Package:** {safe_get(data, 'package_name', 'Unknown')}")
+    st.write(f"• **Version:** {safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})")
+    st.write(f"• **Min SDK:** API {safe_get(data, 'min_sdk_version', 'Unknown')}")
+    st.write(f"• **Target SDK:** API {safe_get(data, 'target_sdk_version', 'Unknown')}")
+    st.write(f"• **Size:** {format_size(safe_get(data, 'file_size', 0))}")
+    st.write(f"• **Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
+    st.write(f"• **Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
+    
+    # OpenGL Version
+    features = safe_get(data, 'features', {})
+    opengl_version = features.get('opengl_version')
+    if opengl_version:
+        st.write(f"• **Graphics:** {opengl_version}")
     
     st.write("")
-    st.write("**Permissions**")
+    st.write("**Permissions** (showing first 8)")
     permissions = safe_get(data, 'permissions', {})
     declared = permissions.get('declared', [])
     if declared:
-        for perm in declared[:5]:  # Show first 5
-            st.write(f"• {perm}")
-        if len(declared) > 5:
-            st.write(f"• ... and {len(declared) - 5} more")
+        for perm in declared[:8]:  # Show first 8
+            clean_perm = perm.replace('android.permission.', '')
+            st.write(f"• {clean_perm}")
+        if len(declared) > 8:
+            st.write(f"• ... and {len(declared) - 8} more")
     else:
         st.write("• No permissions declared")
     
     st.write("")
-    st.write("**Features**")
-    features = safe_get(data, 'features', {})
+    st.write("**Features** (showing first 5)")
     required = features.get('required', [])
     if required:
         for feat in required[:5]:  # Show first 5
-            st.write(f"• {feat}")
+            clean_feat = feat.replace('android.hardware.', '').replace('android.software.', '')
+            st.write(f"• {clean_feat}")
         if len(required) > 5:
             st.write(f"• ... and {len(required) - 5} more")
     else:
         st.write("• No features required")
     
     st.write("")
-    st.write("**Signature**")
+    st.write("**Signature Information**")
     signature = safe_get(data, 'signature', {})
     if signature:
-        st.write(f"• Signer: {safe_get(signature, 'signer', 'Unknown')}")
-        st.write(f"• Valid From: {safe_get(signature, 'valid_from', 'Unknown')}")
-        st.write(f"• Algorithm: {safe_get(signature, 'algorithm', 'Unknown')}")
+        signer = safe_get(signature, 'signer', 'Unknown')
+        # Extract just the CN if it's a full subject
+        if 'CN=' in signer:
+            cn_part = [part for part in signer.split(',') if 'CN=' in part]
+            if cn_part:
+                signer = cn_part[0].replace('CN=', '').strip()
+        
+        st.write(f"• **Signer:** {signer}")
+        st.write(f"• **Algorithm:** {safe_get(signature, 'algorithm', 'Unknown')}")
+        st.write(f"• **Valid From:** {safe_get(signature, 'valid_from', 'Unknown')}")
         
         schemes = signature.get('schemes', {})
-        verified_schemes = [scheme for scheme, status in schemes.items() if status]
+        verified_schemes = []
+        for scheme, status in schemes.items():
+            if status:
+                if 'v1' in scheme.lower():
+                    verified_schemes.append('v1')
+                elif 'v2' in scheme.lower():
+                    verified_schemes.append('v2')
+                elif 'v3.1' in scheme.lower():
+                    verified_schemes.append('v3.1')
+                elif 'v3' in scheme.lower():
+                    verified_schemes.append('v3')
+                elif 'v4' in scheme.lower():
+                    verified_schemes.append('v4')
+        
         if verified_schemes:
-            st.write(f"• Verified: {', '.join(verified_schemes)}")
-    else:
-        st.write("• No signature information")
-    
-    st.write("")
-    st.write("**Unity Check**")
-    unity_exported = safe_get(data, 'unity_exported', None)
-    if unity_exported is not None:
-        if unity_exported:
-            st.write("• Unity exported: YES (potential security risk)")
+            st.write(f"• **Verified Schemes:** {', '.join(verified_schemes)}")
         else:
-            st.write("• Unity exported: NO")
+            st.write("• **Verified Schemes:** None")
     else:
-        st.write("• Not a Unity app")
+        st.write("• No signature information available")
 
 if __name__ == "__main__":
     main()
