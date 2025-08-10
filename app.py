@@ -121,12 +121,64 @@ def batch_apk_analysis():
     st.header("Batch APK Analysis")
     st.markdown("Upload multiple APK files to analyze them in batch and get a comprehensive overview")
     
-    uploaded_files = st.file_uploader(
-        "Upload APK files",
-        type=['apk'],
-        accept_multiple_files=True,
-        help="Select multiple Android APK files for batch analysis"
-    )
+    # Configure to show all files on one page
+    st.markdown("""
+    <style>
+    /* Remove pagination and show all uploaded files */
+    div[data-testid="stFileUploader"] {
+        --uploaded-file-list-max-height: none !important;
+    }
+    div[data-testid="stFileUploader"] > div > div > div {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    div[data-testid="stFileUploader"] .uploadedFiles {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    div[data-testid="stFileUploader"] .uploadedFile {
+        display: block !important;
+    }
+    /* Hide pagination controls */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        display: none !important;
+    }
+    div[data-testid="stFileUploader"] .stSpinner {
+        display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Use a container to better control the file uploader
+    with st.container():
+        uploaded_files = st.file_uploader(
+            "Upload APK files",
+            type=['apk'],
+            accept_multiple_files=True,
+            help="Select multiple Android APK files for batch analysis"
+        )
+        
+        # Additional CSS to ensure no pagination
+        if uploaded_files:
+            st.markdown("""
+            <style>
+            /* Force display all files without pagination */
+            section[data-testid="stFileUploader"] div[data-testid="stFileUploaderDropzone"] + div {
+                max-height: none !important;
+            }
+            section[data-testid="stFileUploader"] [data-testid="stFileUploaderFileList"] {
+                max-height: none !important;
+                overflow-y: visible !important;
+            }
+            /* Hide page navigation if it exists */
+            section[data-testid="stFileUploader"] button[aria-label*="page"] {
+                display: none !important;
+            }
+            section[data-testid="stFileUploader"] span:contains("Showing page") {
+                display: none !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
     
     if uploaded_files:
         st.info(f"📁 {len(uploaded_files)} APK files uploaded")
