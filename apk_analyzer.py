@@ -324,8 +324,14 @@ class APKAnalyzer:
                     
                     # Extract certificate information
                     subject = cert.subject.rfc4514_string()
-                    valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
-                    valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    # Use UTC timezone-aware methods to avoid deprecation warnings
+                    try:
+                        valid_from = cert.not_valid_before_utc.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        valid_until = cert.not_valid_after_utc.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    except AttributeError:
+                        # Fallback for older cryptography versions
+                        valid_from = cert.not_valid_before.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        valid_until = cert.not_valid_after.strftime('%Y-%m-%d %H:%M:%S UTC')
                     
                     # Extract CN from subject
                     subject_cn = "Unknown"
@@ -559,50 +565,78 @@ class APKAnalyzer:
     def _get_manifest_xml(self):
         """Get formatted Android Manifest XML"""
         try:
-            # Get the parsed manifest XML tree
-            manifest = self.apk_obj.get_android_manifest_xml()
-            if manifest is not None:
-                # Convert the XML tree to string with proper formatting
-                import xml.etree.ElementTree as ET
-                
-                # Add proper indentation for readability
-                def indent(elem, level=0):
-                    i = "\n" + level*"  "
-                    if len(elem):
-                        if not elem.text or not elem.text.strip():
-                            elem.text = i + "  "
-                        if not elem.tail or not elem.tail.strip():
-                            elem.tail = i
-                        for elem in elem:
-                            indent(elem, level+1)
-                        if not elem.tail or not elem.tail.strip():
-                            elem.tail = i
-                    else:
-                        if level and (not elem.tail or not elem.tail.strip()):
-                            elem.tail = i
-                
-                root = manifest.getroot()
-                indent(root)
-                xml_string = ET.tostring(root, encoding='unicode', method='xml')
-                
-                # Add XML declaration
-                if not xml_string.startswith('<?xml'):
-                    xml_string = '<?xml version="1.0" encoding="utf-8"?>\n' + xml_string
-                
-                return xml_string
-            return None
-        except Exception as e:
+            # Method 1: Try androguard's direct XML conversion
             try:
-                # Alternative: use androguard's AXML parser directly
+                manifest_xml = self.apk_obj.get_android_manifest_xml()
+                if manifest_xml is not None:
+                    import xml.etree.ElementTree as ET
+                    
+                    # Add proper indentation for readability
+                    def indent(elem, level=0):
+                        i = "\n" + level*"  "
+                        if len(elem):
+                            if not elem.text or not elem.text.strip():
+                                elem.text = i + "  "
+                            if not elem.tail or not elem.tail.strip():
+                                elem.tail = i
+                            for child in elem:
+                                indent(child, level+1)
+                            if not elem.tail or not elem.tail.strip():
+                                elem.tail = i
+                        else:
+                            if level and (not elem.tail or not elem.tail.strip()):
+                                elem.tail = i
+                    
+                    root = manifest_xml.getroot()
+                    indent(root)
+                    xml_string = ET.tostring(root, encoding='unicode', method='xml')
+                    
+                    # Add XML declaration
+                    if not xml_string.startswith('<?xml'):
+                        xml_string = '<?xml version="1.0" encoding="utf-8"?>\n' + xml_string
+                    
+                    return xml_string
+            except Exception as e1:
+                print(f"Method 1 failed: {e1}")
+                pass
+            
+            # Method 2: Use androguard's get_xml() method
+            try:
+                manifest_data = self.apk_obj.get_android_manifest_axml()
+                if manifest_data:
+                    xml_content = manifest_data.get_xml()
+                    if xml_content:
+                        return xml_content
+            except Exception as e2:
+                print(f"Method 2 failed: {e2}")
+                pass
+            
+            # Method 3: Direct AXML parsing
+            try:
                 from androguard.core.axml import AXML
-                axml = AXML(self.apk_obj.get_android_manifest_axml().get_xml())
-                return axml.get_xml()
-            except:
-                try:
-                    # Final fallback: raw AXML content notification
-                    with zipfile.ZipFile(self.apk_path, 'r') as z:
-                        if 'AndroidManifest.xml' in z.namelist():
-                            return "AndroidManifest.xml found but parsing failed. The file is in binary AXML format."
-                    return None
-                except:
-                    return None
+                with zipfile.ZipFile(self.apk_path, 'r') as z:
+                    if 'AndroidManifest.xml' in z.namelist():
+                        manifest_bytes = z.read('AndroidManifest.xml')
+                        axml = AXML(manifest_bytes)
+                        xml_content = axml.get_xml()
+                        if xml_content:
+                            return xml_content
+            except Exception as e3:
+                print(f"Method 3 failed: {e3}")
+                pass
+            
+            # Method 4: Try alternative androguard methods
+            try:
+                # Sometimes the XML needs to be accessed differently
+                manifest_content = str(self.apk_obj.get_android_manifest_xml())
+                if manifest_content and manifest_content != 'None':
+                    return manifest_content
+            except Exception as e4:
+                print(f"Method 4 failed: {e4}")
+                pass
+                
+            return "AndroidManifest.xml found but parsing failed. The file is in binary AXML format."
+            
+        except Exception as e:
+            print(f"Manifest XML extraction error: {e}")
+            return None
