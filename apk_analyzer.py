@@ -199,8 +199,18 @@ class APKAnalyzer:
                                     name = elem.get('{http://schemas.android.com/apk/res/android}name')
                                     if name and name not in declared:
                                         declared.append(name)
-                        except ImportError:
-                            print("AXML import failed")
+                        except Exception as axml_error:
+                            print(f"AXML parsing failed: {axml_error}")
+                            # Method 4: Basic string search as last resort
+                            try:
+                                manifest_str = manifest_content.decode('utf-8', errors='ignore')
+                                import re
+                                perm_matches = re.findall(r'android\.permission\.[A-Z_]+', manifest_str)
+                                for perm in perm_matches:
+                                    if perm not in declared:
+                                        declared.append(perm)
+                            except Exception as string_error:
+                                print(f"String parsing failed: {string_error}")
         except Exception as e:
             print(f"Method 3 failed: {e}")
         
@@ -634,15 +644,26 @@ class APKAnalyzer:
                                 except KeyError:
                                     continue
                             
-                            # If specific paths don't work, search for any ic_launcher files
+                            # Method 3: Search for any icon files in the APK
+                            icon_candidates = []
                             for file_path in z.namelist():
-                                if 'ic_launcher' in file_path and file_path.endswith(('.png', '.jpg', '.jpeg')):
+                                if (('ic_launcher' in file_path or 'app_icon' in file_path or 'icon' in file_path.lower()) 
+                                    and file_path.endswith(('.png', '.jpg', '.jpeg'))):
                                     try:
                                         icon_data = z.read(file_path)
-                                        if icon_data and len(icon_data) > 0:
-                                            return icon_data
+                                        if icon_data and len(icon_data) > 100:
+                                            icon_candidates.append((file_path, len(icon_data), icon_data))
+                                            print(f"Found icon candidate: {file_path} ({len(icon_data)} bytes)")
                                     except:
                                         continue
+                            
+                            # Return the largest icon found (likely highest quality)
+                            if icon_candidates:
+                                # Sort by file size (descending) to get the best quality icon
+                                icon_candidates.sort(key=lambda x: x[1], reverse=True)
+                                selected_icon = icon_candidates[0]
+                                print(f"Selected best icon: {selected_icon[0]} ({selected_icon[1]} bytes)")
+                                return selected_icon[2]
             except Exception as e:
                 print(f"Resource-based icon extraction failed: {e}")
             
