@@ -76,31 +76,85 @@ st.set_page_config(
     page_title="APK Analysis Tool",
     page_icon="📱",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        "Get Help": "https://docs.streamlit.io/",
+        "Report a bug": "https://github.com/",
+        "About": "APK Analysis Tool — inspect Android APKs quickly and securely."
+    },
 )
 
+
+def inject_custom_css() -> None:
+    """Inject small set of CSS utilities for a cleaner look without heavy theming."""
+    st.markdown(
+        """
+        <style>
+        /* Tweak default paddings */
+        .block-container { padding-top: 1.5rem; padding-bottom: 3rem; }
+        /* Section header chip */
+        .section-chip { display:inline-block; padding:.25rem .6rem; border-radius:999px; background:var(--secondaryBackgroundColor); color:var(--textColor); font-weight:600; font-size:0.85rem; }
+        /* Card containers */
+        .section-card { border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:1rem 1.1rem; background: var(--backgroundColor); }
+        .card { border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:1rem 1.1rem; margin-bottom:1rem; }
+        .warn-card { border:1px solid rgba(234,88,12,.25); background: rgba(234,88,12,.12); border-radius:12px; padding:.75rem 1rem; }
+        .card-basic { min-height: 320px; }
+        .card-perms { min-height: 120px; }
+        .warn-card { min-height: 120px; }
+        .header-row { display:flex; align-items:center; gap:.75rem; }
+        .header-row .title { font-weight:800; font-size:1.1rem; }
+        .kpi-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:.5rem 1rem; }
+        .bullet { margin:0; padding-left:1.1rem; }
+        .app-header { display:flex; align-items:center; gap:.75rem; min-height:64px; }
+        /* Expander header emphasis */
+        .streamlit-expanderHeader { font-weight:700 !important; }
+        /* Dataframe radius */
+        .stDataFrame, .stTable { border-radius: 8px; overflow: hidden; }
+        /* Footer */
+        .app-footer { color:#6b7280; font-size:.9rem; border-top:1px solid rgba(0,0,0,.08); padding-top:1rem; margin-top:2rem; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def main():
+    inject_custom_css()
+
+    # Hero header
+    st.markdown("<span class='section-chip'>Android Security</span>", unsafe_allow_html=True)
     st.title("📱 APK Analysis Tool")
-    st.markdown("Upload APK files to extract metadata, permissions, features, and signature details")
-    
-    # Sidebar for mode selection
+    st.caption("Analyze, compare, and validate APKs — fast.")
+
+    # Friendly sidebar with tips and quick links
     with st.sidebar:
-        st.header("Analysis Mode")
-        mode = st.radio(
-            "Choose analysis mode:",
-            ["Single APK Analysis", "Batch APK Analysis", "Dual APK Comparison"],
-            help="Single mode analyzes one APK, Batch mode analyzes multiple APKs, Comparison mode compares two APKs"
-        )
-        
+        st.subheader("How it works")
+        st.write("Upload one or more APKs. We parse metadata, permissions, features, and signatures.")
         st.markdown("---")
-        st.markdown("Upload APK files to get detailed analysis including permissions, features, signature verification, and security insights.")
-    
-    if mode == "Single APK Analysis":
+        st.page_link("pages/Rules.py", label="⚖️ View Rules", icon=None)
+        st.caption("See all checks and heuristics applied during analysis.")
+        st.markdown("---")
+        st.info("Tip: Toggle sections to keep the page tidy. Use batch mode for many APKs.")
+
+    # Top-level navigation using tabs
+    tab1, tab2, tab3 = st.tabs(["Single APK", "Batch", "Compare"])
+
+    with tab1:
+        st.markdown("<div class='section-card'>Upload a single APK to view a detailed report.</div>", unsafe_allow_html=True)
+        st.write("")
         single_apk_analysis()
-    elif mode == "Batch APK Analysis":
+
+    with tab2:
+        st.markdown("<div class='section-card'>Analyze multiple APKs at once and export results.</div>", unsafe_allow_html=True)
+        st.write("")
         batch_apk_analysis()
-    else:
+
+    with tab3:
+        st.markdown("<div class='section-card'>Compare two APKs side-by-side and inspect differences.</div>", unsafe_allow_html=True)
+        st.write("")
         dual_apk_comparison()
+
+    # Footer
+    st.markdown("<div class='app-footer'>Built with ❤️ using Streamlit & Androguard. For security research and educational purposes only.</div>", unsafe_allow_html=True)
 
 def single_apk_analysis():
     st.header("Single APK Analysis")
@@ -810,12 +864,16 @@ def display_apk_comparison(data1, data2, comparison, filename1, filename2):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader(f"📱 {filename1}")
-        display_apk_detailed_summary(data1)
+        render_app_header(data1, filename1)
+        render_security_concerns_card(data1)
+        render_export_status_card(data1)
+        display_apk_detailed_summary(data1, compact=True)
     
     with col2:
-        st.subheader(f"📱 {filename2}")
-        display_apk_detailed_summary(data2)
+        render_app_header(data2, filename2)
+        render_security_concerns_card(data2)
+        render_export_status_card(data2)
+        display_apk_detailed_summary(data2, compact=True)
     
     # Differences
     with st.expander("🔍 Detailed Differences", expanded=False):
@@ -847,18 +905,116 @@ def display_apk_summary(data):
     total_features = len(features.get('required', []))
     st.write(f"**Features:** {total_features}")
 
-def display_apk_detailed_summary(data):
+def render_app_header(data, filename):
+    """Consistent header with icon and filename for columns"""
+    app_icon = safe_get(data, 'app_icon', None)
+    from io import BytesIO
+    cols = st.columns([1, 5])
+    with cols[0]:
+        try:
+            if app_icon:
+                if isinstance(app_icon, str):
+                    st.image(BytesIO(app_icon.encode('latin-1')), width=60)
+                elif isinstance(app_icon, bytes):
+                    st.image(BytesIO(app_icon), width=60)
+                else:
+                    st.image(app_icon, width=60)
+            else:
+                st.write("📱")
+        except Exception:
+            st.write("📱")
+    with cols[1]:
+        st.markdown(f"<div class='app-header'><h3 style='margin:0'>{filename}</h3></div>", unsafe_allow_html=True)
+
+
+def render_security_concerns_card(data):
+    concerns = check_security_concerns(data)
+    if concerns:
+        items = "".join([f"<li>{c}</li>" for c in concerns])
+        html = f"""
+        <div class='warn-card'>
+            <div class='header-row'><span class='title'>🚨 Security Concerns</span></div>
+            <ul class='bullet'>{items}</ul>
+        </div>
+        """
+        st.markdown(html, unsafe_allow_html=True)
+
+
+def render_export_status_card(data):
+    """Show Unity android:exported status in a dedicated card for comparison mode."""
+    unity_exported = safe_get(data, 'unity_exported', None)
+    if unity_exported is None:
+        html = """
+        <div class='card'>
+            <div class='group-title'>Unity Export</div>
+            <div class='small'>No Unity main activity found or unable to determine export status.</div>
+        </div>
+        """
+    elif unity_exported:
+        html = """
+        <div class='card'>
+            <div class='group-title'>Unity Export</div>
+            <div>ℹ️ Unity main activity has android:exported='true'</div>
+        </div>
+        """
+    else:
+        html = """
+        <div class='warn-card'>
+            <div class='header-row'><span class='title'>Unity Export</span></div>
+            <div>⚠️ Main activity missing android:exported='true'</div>
+        </div>
+        """
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def display_apk_detailed_summary(data, compact=False):
     """Display detailed APK summary for comparison mode"""
+    # Compact, aligned presentation for side-by-side columns
+    if compact:
+        info = {
+            'App Name': safe_get(data, 'app_name', 'Unknown'),
+            'Package': safe_get(data, 'package_name', 'Unknown'),
+            'Version': f"{safe_get(data, 'version_name', 'Unknown')} ({safe_get(data, 'version_code', 'Unknown')})",
+            'Min SDK': f"API {safe_get(data, 'min_sdk_version', 'Unknown')}",
+            'Target SDK': f"API {safe_get(data, 'target_sdk_version', 'Unknown')}",
+            'Size': format_size(safe_get(data, 'file_size', 0)),
+            'Architecture': safe_get(data, 'architectures', 'Unknown'),
+            'Debuggable': 'Yes' if safe_get(data, 'debuggable', False) else 'No',
+        }
+        features = safe_get(data, 'features', {})
+        opengl_version = features.get('opengl_version')
+        if opengl_version:
+            info['Graphics'] = opengl_version
+
+        info_items = "".join([f"<li><strong>{k}:</strong> {v}</li>" for k, v in info.items()])
+
+        permissions = safe_get(data, 'permissions', {})
+        declared = permissions.get('declared', [])
+        if declared:
+            listed = [p.replace('android.permission.', '') for p in declared[:8]]
+            extra = f"<li>... and {len(declared)-8} more</li>" if len(declared) > 8 else ""
+            perm_items = "".join([f"<li>{p}</li>" for p in listed]) + extra
+        else:
+            perm_items = "<li>No permissions declared</li>"
+
+        html = f"""
+        <div class='card card-basic'>
+            <div class='group-title'>Basic Information</div>
+            <ul class='bullet'>
+                {info_items}
+            </ul>
+        </div>
+        <div class='card card-perms'>
+            <div class='group-title'>Permissions (first 8)</div>
+            <ul class='bullet'>
+                {perm_items}
+            </ul>
+        </div>
+        """
+        st.markdown(html, unsafe_allow_html=True)
+        return
     
-    # Security concerns check for comparison mode - with proper separation
-    security_concerns = check_security_concerns(data)
-    if security_concerns:
-        st.error("🚨 Security Concerns")
-        for concern in security_concerns:
-            st.write(f"• {concern}")
-        st.write("---")
-    
-    # App icon section
+    # Original verbose layout (used elsewhere if needed)
     app_icon = safe_get(data, 'app_icon', None)
     if app_icon:
         try:
@@ -876,7 +1032,6 @@ def display_apk_detailed_summary(data):
     else:
         st.info("📱 No icon")
     
-    # Basic Information section
     st.write("**Basic Information**")
     st.write(f"• **App Name:** {safe_get(data, 'app_name', 'Unknown')}")
     st.write(f"• **Package:** {safe_get(data, 'package_name', 'Unknown')}")
@@ -886,21 +1041,16 @@ def display_apk_detailed_summary(data):
     st.write(f"• **Size:** {format_size(safe_get(data, 'file_size', 0))}")
     st.write(f"• **Architecture:** {safe_get(data, 'architectures', 'Unknown')}")
     st.write(f"• **Debuggable:** {'Yes' if safe_get(data, 'debuggable', False) else 'No'}")
-    
-    # Add graphics info if available
     features = safe_get(data, 'features', {})
     opengl_version = features.get('opengl_version')
     if opengl_version:
         st.write(f"• **Graphics:** {opengl_version}")
-    
-    # Permissions section
     st.write("")
     st.write("**Permissions** (showing first 8)")
     permissions = safe_get(data, 'permissions', {})
     declared = permissions.get('declared', [])
-    
     if declared:
-        for perm in declared[:8]:  # Show first 8
+        for perm in declared[:8]:
             clean_perm = perm.replace('android.permission.', '')
             st.write(f"• {clean_perm}")
         if len(declared) > 8:

@@ -1,8 +1,17 @@
-[server]
-headless = true
-address = "0.0.0.0"
-port = 5000
-maxUploadSize = 500
-
 [theme]
-base = "light"
+primaryColor = "#10b981"          # emerald
+backgroundColor = "#0b1220"       # deep navy
+secondaryBackgroundColor = "#111827" # slate
+textColor = "#e5e7eb"             # gray-200
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
+headless = true
+port = 8501
+address = "127.0.0.1"
+maxUploadSize = 500

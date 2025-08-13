@@ -1,3 +1,17 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.DS_Store
+.streamlit.log
+*.pyc
+*.pyo
+*.pyd
+.env
+.idea/
+.vscode/
+dist/
+build/
+*.egg-info/
 # Python
 __pycache__/
 *.py[cod]
