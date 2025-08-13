@@ -34,6 +34,8 @@ Preferred communication style: Simple, everyday language.
 - **Signature Verification**: Multi-scheme signature validation (v1-v4 APK signing schemes)
 - **Certificate Chain Analysis**: X.509 certificate validity and algorithm verification
 - **Debug Flag Detection**: Security configuration analysis for production readiness
+- **Target SDK Validation**: Ensures applications target API level 29 for security compliance
+- **Unity Export Verification**: Validates Unity main activity has required android:exported='true' attribute
 
 ## Utility Functions
 - **Data Formatting**: Human-readable file size formatting and safe data access patterns

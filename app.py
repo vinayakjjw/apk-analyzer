@@ -34,6 +34,16 @@ def check_security_concerns(data):
     if architecture and 'armeabi-v7a' not in architecture:
         concerns.append(f"⚠️ **Architecture**: {architecture} (expected armeabi-v7a)")
     
+    # Check Target SDK
+    target_sdk = safe_get(data, 'target_sdk_version', '')
+    if target_sdk and str(target_sdk) != '29':
+        concerns.append(f"⚠️ **Target SDK**: API {target_sdk} (expected API 29)")
+    
+    # Check Unity Export Status
+    unity_exported = safe_get(data, 'unity_exported', None)
+    if unity_exported is not None and not unity_exported:
+        concerns.append("⚠️ **Unity Export**: Main activity missing android:exported='true'")
+    
     # Check Signature
     signature = safe_get(data, 'signature', {})
     if signature:
