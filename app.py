@@ -95,13 +95,18 @@ def main():
 def single_apk_analysis():
     st.header("Single APK Analysis")
     
+    # Add file size information
+    st.info("📋 **File Size Limit:** 500 MB per APK file. If you encounter upload errors, try smaller APK files.")
+    
     uploaded_file = st.file_uploader(
         "Upload APK file",
         type=['apk'],
-        help="Select an Android APK file for analysis"
+        help="Select an Android APK file for analysis (max 500 MB)"
     )
     
     if uploaded_file is not None:
+        file_size = len(uploaded_file.getvalue())
+        st.write(f"📊 **File size:** {format_size(file_size)}")
         with st.spinner("Analyzing APK..."):
             try:
                 # Save uploaded file temporarily
@@ -127,6 +132,9 @@ def batch_apk_analysis():
     st.header("Batch APK Analysis")
     st.markdown("Upload multiple APK files to analyze them in batch and get a comprehensive overview")
     
+    # Add file size information
+    st.info("📋 **File Size Limit:** 500 MB per APK file. If you encounter upload errors, try smaller APK files.")
+    
     # Use session state to manage file uploads and avoid pagination issues
     if 'batch_files' not in st.session_state:
         st.session_state.batch_files = []
@@ -136,7 +144,7 @@ def batch_apk_analysis():
         "Upload APK files",
         type=['apk'],
         accept_multiple_files=True,
-        help="Select multiple Android APK files for batch analysis",
+        help="Select multiple Android APK files for batch analysis (max 500 MB each)",
         key="batch_uploader"
     )
     
@@ -467,6 +475,9 @@ def display_apk_analysis_batch(data, filename, index):
 def dual_apk_comparison():
     st.header("Dual APK Comparison")
     
+    # Add file size information
+    st.info("📋 **File Size Limit:** 500 MB per APK file. If you encounter upload errors, try smaller APK files.")
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -475,8 +486,11 @@ def dual_apk_comparison():
             "Upload first APK file",
             type=['apk'],
             key="apk1",
-            help="Select the first Android APK file for comparison"
+            help="Select the first Android APK file for comparison (max 500 MB)"
         )
+        if uploaded_file1 is not None:
+            file_size1 = len(uploaded_file1.getvalue())
+            st.write(f"📊 **File size:** {format_size(file_size1)}")
     
     with col2:
         st.subheader("Second APK")
@@ -484,8 +498,11 @@ def dual_apk_comparison():
             "Upload second APK file",
             type=['apk'],
             key="apk2",
-            help="Select the second Android APK file for comparison"
+            help="Select the second Android APK file for comparison (max 500 MB)"
         )
+        if uploaded_file2 is not None:
+            file_size2 = len(uploaded_file2.getvalue())
+            st.write(f"📊 **File size:** {format_size(file_size2)}")
     
     if uploaded_file1 is not None and uploaded_file2 is not None:
         with st.spinner("Analyzing and comparing APKs..."):
