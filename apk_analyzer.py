@@ -154,29 +154,82 @@ class APKAnalyzer:
             return []
     
     def _analyze_permissions(self):
-        """Analyze all types of permissions"""
+        """Analyze all types of permissions with multiple extraction methods"""
+        declared = []
+        implied = []
+        optional = []
+        
+        # Method 1: Use androguard's get_declared_permissions
         try:
-            declared = self.apk_obj.get_declared_permissions() or []
-            
-            # Get implied permissions (basic analysis)
-            implied = self._get_implied_permissions()
-            
-            # Get optional permissions
+            if self.apk_obj:
+                declared_method1 = self.apk_obj.get_declared_permissions() or []
+                declared.extend(declared_method1)
+        except Exception as e:
+            print(f"Method 1 failed: {e}")
+        
+        # Method 2: Parse permissions directly from manifest XML
+        try:
+            if self.apk_obj:
+                manifest = self.apk_obj.get_android_manifest_xml()
+                if manifest is not None:
+                    for elem in manifest.iter():
+                        if elem.tag == 'uses-permission':
+                            name = elem.get('{http://schemas.android.com/apk/res/android}name')
+                            if name and name not in declared:
+                                declared.append(name)
+        except Exception as e:
+            print(f"Method 2 failed: {e}")
+        
+        # Method 3: Parse from raw manifest if XML parsing fails
+        try:
+            if not declared:  # Only if other methods failed
+                with zipfile.ZipFile(self.apk_path, 'r') as z:
+                    if 'AndroidManifest.xml' in z.namelist():
+                        manifest_content = z.read('AndroidManifest.xml')
+                        # Try to extract permissions from binary XML using androguard's AXML
+                        try:
+                            from androguard.core.axml import AXML
+                            axml = AXML(manifest_content)
+                            xml_content = axml.get_xml()
+                            # Parse the XML content
+                            import xml.etree.ElementTree as ET
+                            root = ET.fromstring(xml_content)
+                            for elem in root.iter():
+                                if elem.tag == 'uses-permission':
+                                    name = elem.get('{http://schemas.android.com/apk/res/android}name')
+                                    if name and name not in declared:
+                                        declared.append(name)
+                        except ImportError:
+                            print("AXML import failed")
+        except Exception as e:
+            print(f"Method 3 failed: {e}")
+        
+        # Get implied permissions
+        try:
+            implied = self._get_implied_permissions(declared)
+        except Exception as e:
+            print(f"Implied permissions failed: {e}")
+        
+        # Get optional permissions
+        try:
             optional = self._get_optional_permissions()
-            
-            return {
-                'declared': declared,
-                'implied': implied,
-                'optional': optional
-            }
-        except:
-            return {'declared': [], 'implied': [], 'optional': []}
+        except Exception as e:
+            print(f"Optional permissions failed: {e}")
+        
+        return {
+            'declared': declared,
+            'implied': implied,
+            'optional': optional
+        }
     
-    def _get_implied_permissions(self):
+    def _get_implied_permissions(self, declared_permissions=None):
         """Get permissions that are implied by other permissions or features"""
         implied = []
         try:
-            permissions = self.apk_obj.get_declared_permissions() or []
+            # Use passed permissions or get from APK object
+            permissions = declared_permissions or []
+            if not permissions and self.apk_obj:
+                permissions = self.apk_obj.get_declared_permissions() or []
             
             # Some basic implied permission rules
             if 'android.permission.WRITE_EXTERNAL_STORAGE' in permissions:
@@ -185,8 +238,8 @@ class APKAnalyzer:
             if 'android.permission.ACCESS_FINE_LOCATION' in permissions:
                 implied.append('android.permission.ACCESS_COARSE_LOCATION')
                 
-        except:
-            pass
+        except Exception as e:
+            print(f"Implied permissions error: {e}")
         return implied
     
     def _get_optional_permissions(self):
