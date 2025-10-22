@@ -8,7 +8,7 @@ from comparison_utils import APKComparator
 from utils import format_size, safe_get
 
 def check_security_concerns(data):
-    """Check for security concerns and return warnings"""
+    """Check for security concerns and return warnings with enhanced styling"""
     concerns = []
     
     # Check for dangerous permissions
@@ -21,28 +21,28 @@ def check_security_concerns(data):
             dangerous_perms.append('Folder Access')
     
     if dangerous_perms:
-        concerns.append(f"⚠️ **Risky Permissions**: {', '.join(dangerous_perms)}")
+        concerns.append(f"🔒 **Risky Permissions**: {', '.join(dangerous_perms)}")
     
     # Check OpenGL version
     features = safe_get(data, 'features', {})
     opengl_version = features.get('opengl_version', '')
     if opengl_version and '2.0' not in opengl_version:
-        concerns.append(f"⚠️ **OpenGL Version**: {opengl_version} (expected 2.0)")
+        concerns.append(f"🎮 **OpenGL Version**: {opengl_version} (expected 2.0)")
     
     # Check Architecture
     architecture = safe_get(data, 'architectures', '')
     if architecture and 'armeabi-v7a' not in architecture:
-        concerns.append(f"⚠️ **Architecture**: {architecture} (expected armeabi-v7a)")
+        concerns.append(f"🏗️ **Architecture**: {architecture} (expected armeabi-v7a)")
     
     # Check Target SDK
     target_sdk = safe_get(data, 'target_sdk_version', '')
     if target_sdk and str(target_sdk) != '29':
-        concerns.append(f"⚠️ **Target SDK**: API {target_sdk} (expected API 29)")
+        concerns.append(f"📱 **Target SDK**: API {target_sdk} (expected API 29)")
     
     # Check Unity Export Status
     unity_exported = safe_get(data, 'unity_exported', None)
     if unity_exported is not None and not unity_exported:
-        concerns.append("⚠️ **Unity Export**: Main activity missing android:exported='true'")
+        concerns.append("🎮 **Unity Export**: Main activity missing android:exported='true'")
     
     # Check Signature
     signature = safe_get(data, 'signature', {})
@@ -67,7 +67,7 @@ def check_security_concerns(data):
             signature_issues.append("SHA-256 mismatch")
         
         if signature_issues:
-            concerns.append(f"⚠️ **Signature Issue**: {' and '.join(signature_issues)}")
+            concerns.append(f"🔐 **Signature Issue**: {' and '.join(signature_issues)}")
     
     return concerns
 
@@ -86,32 +86,312 @@ st.set_page_config(
 
 
 def inject_custom_css() -> None:
-    """Inject small set of CSS utilities for a cleaner look without heavy theming."""
+    """Inject modern CSS for enhanced UI/UX."""
     st.markdown(
         """
         <style>
-        /* Tweak default paddings */
-        .block-container { padding-top: 1.5rem; padding-bottom: 3rem; }
-        /* Section header chip */
-        .section-chip { display:inline-block; padding:.25rem .6rem; border-radius:999px; background:var(--secondaryBackgroundColor); color:var(--textColor); font-weight:600; font-size:0.85rem; }
-        /* Card containers */
-        .section-card { border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:1rem 1.1rem; background: var(--backgroundColor); }
-        .card { border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:1rem 1.1rem; margin-bottom:1rem; }
-        .warn-card { border:1px solid rgba(234,88,12,.25); background: rgba(234,88,12,.12); border-radius:12px; padding:.75rem 1rem; }
-        .card-basic { min-height: 320px; }
-        .card-perms { min-height: 120px; }
-        .warn-card { min-height: 120px; }
-        .header-row { display:flex; align-items:center; gap:.75rem; }
-        .header-row .title { font-weight:800; font-size:1.1rem; }
-        .kpi-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:.5rem 1rem; }
-        .bullet { margin:0; padding-left:1.1rem; }
-        .app-header { display:flex; align-items:center; gap:.75rem; min-height:64px; }
-        /* Expander header emphasis */
-        .streamlit-expanderHeader { font-weight:700 !important; }
-        /* Dataframe radius */
-        .stDataFrame, .stTable { border-radius: 8px; overflow: hidden; }
+        /* Import Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        /* Global Styles */
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+            max-width: 1200px;
+        }
+        
+        /* Custom Font */
+        .main, .main * {
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #f0f9ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        /* Section Chips */
+        .section-chip {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        /* Enhanced Cards */
+        .section-card {
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            background: #f5f5f5;
+            border-color: #667eea;
+        }
+        
+        /* Warning Cards */
+        .warn-card {
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.1));
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .success-card {
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(34, 197, 94, 0.1));
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #22c55e;
+        }
+        
+        /* Info Cards */
+        .info-card {
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        /* Header Rows */
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .header-row .title {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #1f2937;
+        }
+        
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .kpi-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kpi-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        /* App Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 80px;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        
+        /* Enhanced Expanders */
+        .streamlit-expanderHeader {
+            font-weight: 700 !important;
+            font-size: 1.1rem !important;
+            color: #1f2937 !important;
+            padding: 1rem !important;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
+            border-radius: 8px !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        .streamlit-expanderContent {
+            padding: 1.5rem !important;
+        }
+        
+        /* Enhanced DataFrames */
+        .stDataFrame, .stTable {
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
+            border: 1px solid rgba(0,0,0,0.05) !important;
+        }
+        
+        /* File Upload Styling */
+        .stFileUploader > div {
+            border: 2px dashed #667eea !important;
+            border-radius: 12px !important;
+            padding: 2rem !important;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05)) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .stFileUploader > div:hover {
+            border-color: #4f46e5 !important;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)) !important;
+        }
+        
+        /* Button Styling */
+        .stButton > button {
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 0.75rem 2rem !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
+        }
+        
+        /* Tab Styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 1rem;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            background: #f8fafc !important;
+            border-radius: 8px !important;
+            padding: 0.75rem 1.5rem !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            color: white !important;
+        }
+        
+        /* Progress Bar */
+        .stProgress > div > div > div {
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        }
+        
+        /* Sidebar Styling */
+        .css-1d391kg {
+            background: linear-gradient(180deg, #f8fafc, #e2e8f0) !important;
+        }
+        
         /* Footer */
-        .app-footer { color:#6b7280; font-size:.9rem; border-top:1px solid rgba(0,0,0,.08); padding-top:1rem; margin-top:2rem; }
+        .app-footer {
+            color: #6b7280;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            padding-top: 2rem;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        
+        /* Loading Spinner */
+        .stSpinner {
+            color: #667eea !important;
+        }
+        
+        /* Metric Cards */
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animation for cards */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .section-card, .card {
+            animation: fadeInUp 0.6s ease-out;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -120,58 +400,116 @@ def inject_custom_css() -> None:
 def main():
     inject_custom_css()
 
-    # Hero header
-    st.markdown("<span class='section-chip'>Android Security</span>", unsafe_allow_html=True)
-    st.title("📱 APK Analysis Tool")
-    st.caption("Analyze, compare, and validate APKs — fast.")
+    # Enhanced Hero Section
+    st.markdown("""
+    <div class="hero-section">
+        <div class="section-chip">🔒 Android Security Analysis</div>
+        <h1 class="hero-title">📱 APK Analysis Tool</h1>
+        <p class="hero-subtitle">Analyze, compare, and validate Android APKs with advanced security insights</p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">🔍 Deep Analysis</div>
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">⚡ Fast Processing</div>
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">🛡️ Security Focused</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Friendly sidebar with tips and quick links
+    # Enhanced Sidebar
     with st.sidebar:
-        st.subheader("How it works")
-        st.write("Upload one or more APKs. We parse metadata, permissions, features, and signatures.")
+        st.markdown("### 🚀 How it works")
+        st.markdown("""
+        <div class="info-card">
+            <strong>1. Upload APK</strong><br>
+            Select your Android APK file(s)
+        </div>
+        <div class="info-card">
+            <strong>2. Analysis</strong><br>
+            We parse metadata, permissions, and signatures
+        </div>
+        <div class="info-card">
+            <strong>3. Results</strong><br>
+            Get detailed security insights and recommendations
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.markdown("---")
-        st.page_link("pages/Rules.py", label="⚖️ View Rules", icon=None)
-        st.caption("See all checks and heuristics applied during analysis.")
+        st.markdown("### 📋 Quick Links")
+        st.page_link("pages/Rules.py", label="⚖️ Security Rules", icon="📜")
+        st.caption("View all security checks and validation rules")
+        
         st.markdown("---")
-        st.info("Tip: Toggle sections to keep the page tidy. Use batch mode for many APKs.")
+        st.markdown("### 💡 Tips")
+        st.info("💡 **Pro Tip:** Use batch mode for analyzing multiple APKs efficiently")
+        st.info("🔍 **Security:** Check the signature details for authenticity verification")
+        st.info("📊 **Compare:** Use the comparison tool to spot differences between APK versions")
 
-    # Top-level navigation using tabs
-    tab1, tab2, tab3 = st.tabs(["Single APK", "Batch", "Compare"])
+    # Enhanced Tab Navigation
+    tab1, tab2, tab3 = st.tabs(["🔍 Single APK", "📦 Batch Analysis", "⚖️ Compare APKs"])
 
     with tab1:
-        st.markdown("<div class='section-card'>Upload a single APK to view a detailed report.</div>", unsafe_allow_html=True)
-        st.write("")
+        st.markdown("""
+        <div class="section-card">
+            <div class="header-row">
+                <span class="title">🔍 Single APK Analysis</span>
+            </div>
+            <p>Upload a single APK file to get a comprehensive security analysis with detailed insights.</p>
+        </div>
+        """, unsafe_allow_html=True)
         single_apk_analysis()
 
     with tab2:
-        st.markdown("<div class='section-card'>Analyze multiple APKs at once and export results.</div>", unsafe_allow_html=True)
-        st.write("")
+        st.markdown("""
+        <div class="section-card">
+            <div class="header-row">
+                <span class="title">📦 Batch Analysis</span>
+            </div>
+            <p>Analyze multiple APKs simultaneously and export results for comprehensive security auditing.</p>
+        </div>
+        """, unsafe_allow_html=True)
         batch_apk_analysis()
 
     with tab3:
-        st.markdown("<div class='section-card'>Compare two APKs side-by-side and inspect differences.</div>", unsafe_allow_html=True)
-        st.write("")
+        st.markdown("""
+        <div class="section-card">
+            <div class="header-row">
+                <span class="title">⚖️ APK Comparison</span>
+            </div>
+            <p>Compare two APK files side-by-side to identify differences, security changes, and version updates.</p>
+        </div>
+        """, unsafe_allow_html=True)
         dual_apk_comparison()
 
     # Footer
     st.markdown("<div class='app-footer'>Built with ❤️ using Streamlit & Androguard. For security research and educational purposes only.</div>", unsafe_allow_html=True)
 
 def single_apk_analysis():
-    st.header("Single APK Analysis")
-    
-    # Add file size information
-    st.info("📋 **File Size Limit:** 500 MB per APK file. If you encounter upload errors, try smaller APK files.")
+    # Enhanced file upload section
+    st.markdown("""
+    <div class="info-card">
+        <strong>📋 File Requirements:</strong> Maximum 500 MB per APK file. For best performance, use files under 100 MB.
+    </div>
+    """, unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader(
-        "Upload APK file",
+        "📱 Upload APK File",
         type=['apk'],
-        help="Select an Android APK file for analysis (max 500 MB)"
+        help="Select an Android APK file for comprehensive security analysis",
+        label_visibility="collapsed"
     )
     
     if uploaded_file is not None:
         file_size = len(uploaded_file.getvalue())
-        st.write(f"📊 **File size:** {format_size(file_size)}")
-        with st.spinner("Analyzing APK..."):
+        
+        # Enhanced file info display
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📊 File Size", format_size(file_size))
+        with col2:
+            st.metric("📱 File Type", "Android APK")
+        with col3:
+            st.metric("⚡ Status", "Ready for Analysis")
+        
+        with st.spinner("🔍 Analyzing APK - This may take a few moments..."):
             try:
                 # Save uploaded file temporarily
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.apk') as tmp_file:
@@ -368,13 +706,34 @@ def display_batch_results(results, show_details, export_csv):
 
 def display_apk_analysis_batch(data, filename, index):
     """Display APK analysis for batch mode with unique keys"""
-    # Security Concerns Check
+    # Enhanced Security Concerns Display
     security_concerns = check_security_concerns(data)
     if security_concerns:
-        st.error("🚨 **Concerns Detected**")
+        st.markdown("""
+        <div class="warn-card">
+            <div class="header-row">
+                <span class="title">🚨 Security Concerns Detected</span>
+            </div>
+            <p>The following security issues were found in this APK:</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         for concern in security_concerns:
-            st.warning(concern)
+            st.markdown(f"""
+            <div class="warn-card">
+                {concern}
+            </div>
+            """, unsafe_allow_html=True)
         st.markdown("---")
+    else:
+        st.markdown("""
+        <div class="success-card">
+            <div class="header-row">
+                <span class="title">✅ No Security Concerns</span>
+            </div>
+            <p>This APK passed all security checks!</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # App Overview with Icon
     with st.expander("📱 App Overview", expanded=True):
@@ -606,13 +965,34 @@ def dual_apk_comparison():
 def display_apk_analysis(data, filename):
     st.success(f"✅ Successfully analyzed: {filename}")
     
-    # Security Concerns Check
+    # Enhanced Security Concerns Display
     security_concerns = check_security_concerns(data)
     if security_concerns:
-        st.error("🚨 **Concerns Detected**")
+        st.markdown("""
+        <div class="warn-card">
+            <div class="header-row">
+                <span class="title">🚨 Security Concerns Detected</span>
+            </div>
+            <p>The following security issues were found in this APK:</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         for concern in security_concerns:
-            st.warning(concern)
+            st.markdown(f"""
+            <div class="warn-card">
+                {concern}
+            </div>
+            """, unsafe_allow_html=True)
         st.markdown("---")
+    else:
+        st.markdown("""
+        <div class="success-card">
+            <div class="header-row">
+                <span class="title">✅ No Security Concerns</span>
+            </div>
+            <p>This APK passed all security checks!</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # App Overview with Icon
     with st.expander("📱 App Overview", expanded=True):
