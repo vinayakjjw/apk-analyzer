@@ -493,23 +493,6 @@ def main():
 
     # Enhanced Sidebar
     with st.sidebar:
-        st.markdown("### 🚀 How it works")
-        st.markdown("""
-        <div class="info-card">
-            <strong>1. Upload APK</strong><br>
-            Select your Android APK file(s)
-        </div>
-        <div class="info-card">
-            <strong>2. Analysis</strong><br>
-            We parse metadata, permissions, and signatures
-        </div>
-        <div class="info-card">
-            <strong>3. Results</strong><br>
-            Get detailed security insights and recommendations
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("---")
         st.markdown("### 📋 Quick Links")
         st.page_link("pages/Rules.py", label="⚖️ Security Rules", icon="📜")
         st.caption("View all security checks and validation rules")
