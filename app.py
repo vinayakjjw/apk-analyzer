@@ -73,14 +73,14 @@ def check_security_concerns(data):
 
 # Configure page
 st.set_page_config(
-    page_title="APK Analysis Tool for Azec",
-    page_icon="🔍",
+    page_title="APK Analysis Tool",
+    page_icon="📱",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
         "Get Help": "https://docs.streamlit.io/",
         "Report a bug": "https://github.com/",
-        "About": "APK Analysis Tool for Azec — inspect Android APKs quickly and securely."
+        "About": "APK Analysis Tool — inspect Android APKs quickly and securely."
     },
 )
 
@@ -145,74 +145,63 @@ def inject_custom_css() -> None:
             border: 1px solid rgba(255,255,255,0.3);
         }
         
-        /* Enhanced Cards - Dark Theme Compatible */
+        /* Enhanced Cards */
         .section-card {
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(0,0,0,0.08);
             border-radius: 16px;
             padding: 2rem;
-            background: rgba(30, 41, 59, 0.8);
-            color: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
             margin-bottom: 1.5rem;
-            backdrop-filter: blur(10px);
         }
         
         .section-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-            background: rgba(30, 41, 59, 0.9);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         
         .card {
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(0,0,0,0.08);
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
-            background: rgba(51, 65, 85, 0.6);
-            color: white;
+            background: #fafafa;
             transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
         }
         
         .card:hover {
-            background: rgba(51, 65, 85, 0.8);
+            background: #f5f5f5;
             border-color: #667eea;
         }
         
-        /* Warning Cards - Dark Theme */
+        /* Warning Cards */
         .warn-card {
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.25));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.1));
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid #ef4444;
-            color: white;
-            backdrop-filter: blur(5px);
         }
         
         .success-card {
-            border: 1px solid rgba(34, 197, 94, 0.4);
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.25));
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(34, 197, 94, 0.1));
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid #22c55e;
-            color: white;
-            backdrop-filter: blur(5px);
         }
         
-        /* Info Cards - Dark Theme */
+        /* Info Cards */
         .info-card {
-            border: 1px solid rgba(59, 130, 246, 0.4);
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.25));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid #3b82f6;
-            color: white;
-            backdrop-filter: blur(5px);
         }
         
         /* Header Rows */
@@ -325,37 +314,21 @@ def inject_custom_css() -> None:
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
         }
         
-        /* Tab Styling - Dark Theme */
+        /* Tab Styling */
         .stTabs [data-baseweb="tab-list"] {
             gap: 1rem;
-            background: rgba(15, 23, 42, 0.8) !important;
-            padding: 0.5rem !important;
-            border-radius: 12px !important;
         }
         
         .stTabs [data-baseweb="tab"] {
-            background: rgba(30, 41, 59, 0.8) !important;
-            color: white !important;
+            background: #f8fafc !important;
             border-radius: 8px !important;
             padding: 0.75rem 1.5rem !important;
             font-weight: 600 !important;
             transition: all 0.3s ease !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-        }
-        
-        .stTabs [data-baseweb="tab"]:hover {
-            background: rgba(51, 65, 85, 0.8) !important;
-            transform: translateY(-1px) !important;
         }
         
         .stTabs [aria-selected="true"] {
             background: linear-gradient(135deg, #667eea, #764ba2) !important;
-            color: white !important;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
-        }
-        
-        .stTabs [aria-selected="false"] {
-            background: rgba(30, 41, 59, 0.8) !important;
             color: white !important;
         }
         
@@ -419,61 +392,6 @@ def inject_custom_css() -> None:
         .section-card, .card {
             animation: fadeInUp 0.6s ease-out;
         }
-        
-        /* Fix any remaining white backgrounds */
-        .stMarkdown, .stMarkdown * {
-            color: inherit !important;
-        }
-        
-        /* Ensure all text in cards is white */
-        .section-card *, .card *, .warn-card *, .success-card *, .info-card * {
-            color: white !important;
-        }
-        
-        /* Fix Streamlit default components */
-        .stAlert {
-            background: rgba(30, 41, 59, 0.9) !important;
-            color: white !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-        }
-        
-        /* Fix any white backgrounds in Streamlit components */
-        .stApp > div {
-            background: #0f172a !important;
-        }
-        
-        /* Ensure proper contrast for all text */
-        .main .block-container {
-            color: white;
-        }
-        
-        /* Fix metric cards */
-        .metric-container {
-            background: rgba(30, 41, 59, 0.8) !important;
-            color: white !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-        }
-        
-        /* Force all Streamlit components to dark theme */
-        .stTabs > div > div > div {
-            background: transparent !important;
-        }
-        
-        /* Override any remaining white backgrounds */
-        .stTabs [data-baseweb="tab"] {
-            background: rgba(30, 41, 59, 0.8) !important;
-            color: white !important;
-        }
-        
-        /* Ensure tab content area is dark */
-        .stTabs [data-baseweb="tab-panel"] {
-            background: transparent !important;
-        }
-        
-        /* Fix any remaining white text on white background issues */
-        .stTabs [data-baseweb="tab"] * {
-            color: white !important;
-        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -485,23 +403,20 @@ def main():
     # Enhanced Hero Section
     st.markdown("""
     <div class="hero-section">
-        <div class="section-chip">APK Analyser</div>
-        <h1 class="hero-title">APK Analysis Tool for Azec</h1>
+        <div class="section-chip">🔒 Android Security Analysis</div>
+        <h1 class="hero-title">📱 APK Analysis Tool</h1>
         <p class="hero-subtitle">Analyze, compare, and validate Android APKs with advanced security insights</p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">🔍 Deep Analysis</div>
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">⚡ Fast Processing</div>
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">🛡️ Security Focused</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
     # Enhanced Sidebar
     with st.sidebar:
-        st.markdown("### 📋 Quick Links")
-        st.page_link("pages/Rules.py", label="⚖️ Security Rules", icon="📜")
-        st.caption("View all security checks and validation rules")
-        
-        st.markdown("---")
-        st.markdown("### 💡 Tips")
-        st.info("💡 **Pro Tip:** Use batch mode for analyzing multiple APKs efficiently")
-        st.info("🔍 **Security:** Check the signature details for authenticity verification")
-        st.info("📊 **Compare:** Use the comparison tool to spot differences between APK versions")
+        pass
 
     # Enhanced Tab Navigation
     tab1, tab2, tab3 = st.tabs(["🔍 Single APK", "📦 Batch Analysis", "⚖️ Compare APKs"])
