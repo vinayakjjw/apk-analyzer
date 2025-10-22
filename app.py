@@ -493,19 +493,42 @@ def main():
 
     # Enhanced Sidebar
     with st.sidebar:
-        st.markdown("### 🚀 How it works")
         st.markdown("""
-        <div class="info-card">
-            <strong>1. Upload APK</strong><br>
-            Select your Android APK file(s)
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+                <h3 style="color: white; margin: 0; font-size: 1.2rem;">🚀 How it works</h3>
+            </div>
         </div>
-        <div class="info-card">
-            <strong>2. Analysis</strong><br>
-            We parse metadata, permissions, and signatures
-        </div>
-        <div class="info-card">
-            <strong>3. Results</strong><br>
-            Get detailed security insights and recommendations
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="info-card" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem;">1</div>
+                    <strong style="color: white; font-size: 1.1rem;">Upload APK</strong>
+                </div>
+                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 0.95rem;">Select your Android APK file(s)</p>
+            </div>
+            
+            <div class="info-card" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem;">2</div>
+                    <strong style="color: white; font-size: 1.1rem;">Analysis</strong>
+                </div>
+                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 0.95rem;">We parse metadata, permissions, and signatures</p>
+            </div>
+            
+            <div class="info-card" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem;">3</div>
+                    <strong style="color: white; font-size: 1.1rem;">Results</strong>
+                </div>
+                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 0.95rem;">Get detailed security insights and recommendations</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
