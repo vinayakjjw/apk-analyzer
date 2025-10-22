@@ -1,17 +1,8 @@
-[theme]
-primaryColor = "#10b981"          # emerald
-backgroundColor = "#0b1220"       # deep navy
-secondaryBackgroundColor = "#111827" # slate
-textColor = "#e5e7eb"             # gray-200
-font = "sans serif"
+[server]
+port = 8501
+headless = true
+enableCORS = false
+enableXsrfProtection = false
 
 [browser]
 gatherUsageStats = false
-
-[server]
-enableCORS = false
-enableXsrfProtection = false
-headless = true
-port = 8501
-address = "127.0.0.1"
-maxUploadSize = 500

@@ -14,32 +14,117 @@ class APKAnalyzer:
     def analyze(self):
         """Perform comprehensive APK analysis"""
         try:
-            self.apk_obj = APK(self.apk_path)
-            
-            analysis_data = {
-                'file_size': self.file_size,
-                'app_name': self._get_app_name(),
-                'package_name': self._get_package_name(),
-                'version_name': self._get_version_name(),
-                'version_code': self._get_version_code(),
-                'min_sdk_version': self._get_min_sdk_version(),
-                'target_sdk_version': self._get_target_sdk_version(),
-                'debuggable': self._is_debuggable(),
-                'architectures': self._get_architectures(),
-                'supported_screens': self._get_supported_screens(),
-                'supported_densities': self._get_supported_densities(),
-                'permissions': self._analyze_permissions(),
-                'features': self._analyze_features(),
-                'signature': self._analyze_signature(),
-                'unity_exported': self._check_unity_exported(),
-                'activities': self._get_activities(),
-                'services': self._get_services(),
-                'receivers': self._get_receivers(),
-                'providers': self._get_providers(),
-                'app_icon': self._get_app_icon(),
-                'manifest_xml': self._get_manifest_xml()
-            }
-            
+            # Initialize APK parser; prefer pure-python path to avoid external tool issues
+            try:
+                self.apk_obj = APK(self.apk_path, testzip=True)
+            except Exception:
+                # Fallback if strict zip test causes issues
+                self.apk_obj = APK(self.apk_path, testzip=False)
+
+            analysis_data = {'file_size': self.file_size}
+
+            # Populate each section defensively so a single failure doesn't abort the whole analysis
+            try:
+                analysis_data['app_name'] = self._get_app_name()
+            except Exception:
+                analysis_data['app_name'] = 'Unknown'
+
+            try:
+                analysis_data['package_name'] = self._get_package_name()
+            except Exception:
+                analysis_data['package_name'] = 'Unknown'
+
+            try:
+                analysis_data['version_name'] = self._get_version_name()
+            except Exception:
+                analysis_data['version_name'] = 'Unknown'
+
+            try:
+                analysis_data['version_code'] = self._get_version_code()
+            except Exception:
+                analysis_data['version_code'] = 'Unknown'
+
+            try:
+                analysis_data['min_sdk_version'] = self._get_min_sdk_version()
+            except Exception:
+                analysis_data['min_sdk_version'] = 'Unknown'
+
+            try:
+                analysis_data['target_sdk_version'] = self._get_target_sdk_version()
+            except Exception:
+                analysis_data['target_sdk_version'] = 'Unknown'
+
+            try:
+                analysis_data['debuggable'] = self._is_debuggable()
+            except Exception:
+                analysis_data['debuggable'] = False
+
+            try:
+                analysis_data['architectures'] = self._get_architectures()
+            except Exception:
+                analysis_data['architectures'] = 'Unknown'
+
+            try:
+                analysis_data['supported_screens'] = self._get_supported_screens()
+            except Exception:
+                analysis_data['supported_screens'] = []
+
+            try:
+                analysis_data['supported_densities'] = self._get_supported_densities()
+            except Exception:
+                analysis_data['supported_densities'] = []
+
+            try:
+                analysis_data['permissions'] = self._analyze_permissions()
+            except Exception:
+                analysis_data['permissions'] = {'declared': [], 'implied': [], 'optional': []}
+
+            try:
+                analysis_data['features'] = self._analyze_features()
+            except Exception:
+                analysis_data['features'] = {'required': [], 'implied': [], 'not_required': [], 'opengl_version': None}
+
+            try:
+                analysis_data['signature'] = self._analyze_signature()
+            except Exception as _e:
+                # Signature parsing is frequently brittle; do not fail overall analysis
+                analysis_data['signature'] = {'error': str(_e)}
+
+            try:
+                analysis_data['unity_exported'] = self._check_unity_exported()
+            except Exception:
+                analysis_data['unity_exported'] = None
+
+            try:
+                analysis_data['activities'] = self._get_activities()
+            except Exception:
+                analysis_data['activities'] = []
+
+            try:
+                analysis_data['services'] = self._get_services()
+            except Exception:
+                analysis_data['services'] = []
+
+            try:
+                analysis_data['receivers'] = self._get_receivers()
+            except Exception:
+                analysis_data['receivers'] = []
+
+            try:
+                analysis_data['providers'] = self._get_providers()
+            except Exception:
+                analysis_data['providers'] = []
+
+            try:
+                analysis_data['app_icon'] = self._get_app_icon()
+            except Exception:
+                analysis_data['app_icon'] = None
+
+            try:
+                analysis_data['manifest_xml'] = self._get_manifest_xml()
+            except Exception:
+                analysis_data['manifest_xml'] = None
+
             return analysis_data
             
         except Exception as e:

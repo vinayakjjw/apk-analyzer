@@ -1,17 +1,3 @@
-.venv/
-__pycache__/
-.pytest_cache/
-.DS_Store
-.streamlit.log
-*.pyc
-*.pyo
-*.pyd
-.env
-.idea/
-.vscode/
-dist/
-build/
-*.egg-info/
 # Python
 __pycache__/
 *.py[cod]
@@ -30,11 +16,12 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-PIPFILE.lock
+MANIFEST
 
 # PyInstaller
 *.manifest
@@ -57,7 +44,6 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-cover/
 
 # Translations
 *.mo
@@ -80,7 +66,6 @@ instance/
 docs/_build/
 
 # PyBuilder
-.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -95,12 +80,6 @@ ipython_config.py
 
 # pipenv
 Pipfile.lock
-
-# poetry
-poetry.lock
-
-# pdm
-.pdm.toml
 
 # PEP 582
 __pypackages__/
@@ -139,29 +118,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# Streamlit
-.streamlit/secrets.toml
-
-# APK files (test files)
-*.apk
-
-# Uploaded files
-uploaded_files/
-temp_files/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -171,6 +127,18 @@ temp_files/
 ehthumbs.db
 Thumbs.db
 
-# Replit
-.replit
-replit.nix
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+attached_assets/
+repl_nix_workspace.egg-info/
+.vercel/
+
+# Temporary files
+*.tmp
+*.temp
