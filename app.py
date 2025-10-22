@@ -73,14 +73,14 @@ def check_security_concerns(data):
 
 # Configure page
 st.set_page_config(
-    page_title="APK Analysis Tool",
-    page_icon="📱",
+    page_title="APK Analysis Tool for Azec",
+    page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
         "Get Help": "https://docs.streamlit.io/",
         "Report a bug": "https://github.com/",
-        "About": "APK Analysis Tool — inspect Android APKs quickly and securely."
+        "About": "APK Analysis Tool for Azec — inspect Android APKs quickly and securely."
     },
 )
 
@@ -485,14 +485,9 @@ def main():
     # Enhanced Hero Section
     st.markdown("""
     <div class="hero-section">
-        <div class="section-chip">🔒 Android Security Analysis</div>
-        <h1 class="hero-title">📱 APK Analysis Tool</h1>
+        <div class="section-chip">APK Analyser</div>
+        <h1 class="hero-title">APK Analysis Tool for Azec</h1>
         <p class="hero-subtitle">Analyze, compare, and validate Android APKs with advanced security insights</p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
-            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">🔍 Deep Analysis</div>
-            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">⚡ Fast Processing</div>
-            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">🛡️ Security Focused</div>
-        </div>
     </div>
     """, unsafe_allow_html=True)
 
