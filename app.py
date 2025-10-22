@@ -145,63 +145,74 @@ def inject_custom_css() -> None:
             border: 1px solid rgba(255,255,255,0.3);
         }
         
-        /* Enhanced Cards */
+        /* Enhanced Cards - Dark Theme Compatible */
         .section-card {
-            border: 1px solid rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
             padding: 2rem;
-            background: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            background: rgba(30, 41, 59, 0.8);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
             margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
         }
         
         .section-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            background: rgba(30, 41, 59, 0.9);
         }
         
         .card {
-            border: 1px solid rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
-            background: #fafafa;
+            background: rgba(51, 65, 85, 0.6);
+            color: white;
             transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
         
         .card:hover {
-            background: #f5f5f5;
+            background: rgba(51, 65, 85, 0.8);
             border-color: #667eea;
         }
         
-        /* Warning Cards */
+        /* Warning Cards - Dark Theme */
         .warn-card {
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.1));
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.25));
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid #ef4444;
+            color: white;
+            backdrop-filter: blur(5px);
         }
         
         .success-card {
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(34, 197, 94, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.25));
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid #22c55e;
+            color: white;
+            backdrop-filter: blur(5px);
         }
         
-        /* Info Cards */
+        /* Info Cards - Dark Theme */
         .info-card {
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.25));
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1rem;
             border-left: 4px solid #3b82f6;
+            color: white;
+            backdrop-filter: blur(5px);
         }
         
         /* Header Rows */
@@ -314,21 +325,37 @@ def inject_custom_css() -> None:
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
         }
         
-        /* Tab Styling */
+        /* Tab Styling - Dark Theme */
         .stTabs [data-baseweb="tab-list"] {
             gap: 1rem;
+            background: rgba(15, 23, 42, 0.8) !important;
+            padding: 0.5rem !important;
+            border-radius: 12px !important;
         }
         
         .stTabs [data-baseweb="tab"] {
-            background: #f8fafc !important;
+            background: rgba(30, 41, 59, 0.8) !important;
+            color: white !important;
             border-radius: 8px !important;
             padding: 0.75rem 1.5rem !important;
             font-weight: 600 !important;
             transition: all 0.3s ease !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        
+        .stTabs [data-baseweb="tab"]:hover {
+            background: rgba(51, 65, 85, 0.8) !important;
+            transform: translateY(-1px) !important;
         }
         
         .stTabs [aria-selected="true"] {
             background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        }
+        
+        .stTabs [aria-selected="false"] {
+            background: rgba(30, 41, 59, 0.8) !important;
             color: white !important;
         }
         
@@ -391,6 +418,61 @@ def inject_custom_css() -> None:
         
         .section-card, .card {
             animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Fix any remaining white backgrounds */
+        .stMarkdown, .stMarkdown * {
+            color: inherit !important;
+        }
+        
+        /* Ensure all text in cards is white */
+        .section-card *, .card *, .warn-card *, .success-card *, .info-card * {
+            color: white !important;
+        }
+        
+        /* Fix Streamlit default components */
+        .stAlert {
+            background: rgba(30, 41, 59, 0.9) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        
+        /* Fix any white backgrounds in Streamlit components */
+        .stApp > div {
+            background: #0f172a !important;
+        }
+        
+        /* Ensure proper contrast for all text */
+        .main .block-container {
+            color: white;
+        }
+        
+        /* Fix metric cards */
+        .metric-container {
+            background: rgba(30, 41, 59, 0.8) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        
+        /* Force all Streamlit components to dark theme */
+        .stTabs > div > div > div {
+            background: transparent !important;
+        }
+        
+        /* Override any remaining white backgrounds */
+        .stTabs [data-baseweb="tab"] {
+            background: rgba(30, 41, 59, 0.8) !important;
+            color: white !important;
+        }
+        
+        /* Ensure tab content area is dark */
+        .stTabs [data-baseweb="tab-panel"] {
+            background: transparent !important;
+        }
+        
+        /* Fix any remaining white text on white background issues */
+        .stTabs [data-baseweb="tab"] * {
+            color: white !important;
         }
         </style>
         """,
